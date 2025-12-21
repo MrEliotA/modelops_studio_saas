@@ -1,0 +1,88 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: modelops-api
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: modelops-role
+rules:
+  - apiGroups: [""]
+    resources: ["namespaces", "services", "pods"]
+    verbs: ["get", "list", "watch", "create", "patch", "delete"]
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "list", "watch", "create", "patch", "delete"]
+  - apiGroups: ["batch"]
+    resources: ["jobs"]
+    verbs: ["get", "list", "watch", "create", "patch", "delete"]
+  - apiGroups: ["keda.sh"]
+    resources: ["scaledobjects", "triggerauthentications"]
+    verbs: ["get", "list", "watch", "create", "patch", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: modelops-api-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: modelops-role
+subjects:
+  - kind: ServiceAccount
+    name: modelops-api
+    namespace: modelops-system
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: modelops-api
+spec:
+  selector:
+    app: modelops-api
+  ports:
+    - name: http
+  port: 80
+  targetPort: 8000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: modelops-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: modelops-api
+  template:
+    metadata:
+      labels:
+    modelops.io/scrape: \"true\"
+        app: modelops-api
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8000"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: modelops-api
+      containers:
+        - name: api
+          image: modelops/api:dev
+          env:
+            - name: MODELOPS_DATABASE_URL
+              value: postgresql+psycopg://modelops:modelops@postgres:5432/modelops
+            - name: MODELOPS_JWT_SECRET
+              value: dev-secret
+            - name: MODELOPS_S3_ENDPOINT
+              value: http://minio:9000
+            - name: MODELOPS_S3_ACCESS_KEY
+              value: minio
+            - name: MODELOPS_S3_SECRET_KEY
+              value: minio12345
+            - name: MODELOPS_S3_BUCKET
+              value: artifacts
+            - name: MODELOPS_POOL_ENFORCEMENT
+              value: allocator
+          ports:
+            - containerPort: 8000

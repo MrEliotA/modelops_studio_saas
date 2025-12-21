@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: modelops-agent
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: modelops-agent
+  template:
+    metadata:
+      labels:
+        app: modelops-agent
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8000"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: modelops-api
+      containers:
+        - name: agent
+          image: modelops/agent:dev
+          ports:
+            - containerPort: 8000
+          env:
+            - name: MODELOPS_DATABASE_URL
+              value: postgresql+psycopg://modelops:modelops@postgres:5432/modelops
+            - name: MODELOPS_AGENT_TICK_SECONDS
+              value: "2"

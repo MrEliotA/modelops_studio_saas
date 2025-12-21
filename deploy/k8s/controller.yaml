@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: modelops-controller
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: modelops-controller
+  template:
+    metadata:
+      labels:
+        app: modelops-controller
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8000"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: modelops-api
+      containers:
+        - name: controller
+          image: modelops/controller:dev
+          ports:
+            - containerPort: 8000
+          env:
+            - name: MODELOPS_DATABASE_URL
+              value: postgresql+psycopg://modelops:modelops@postgres:5432/modelops
+            - name: MODELOPS_S3_ENDPOINT
+              value: http://minio:9000
+            - name: MODELOPS_S3_ACCESS_KEY
+              value: minio
+            - name: MODELOPS_S3_SECRET_KEY
+              value: minio12345
+            - name: MODELOPS_S3_BUCKET
+              value: artifacts
+            - name: MODELOPS_CONTROLLER_TICK_SECONDS
+              value: "2"
+            - name: MODELOPS_KEDA_ENABLED
+              value: "true"
+            - name: MODELOPS_ENABLE_REAL_GPU_REQUESTS
+              value: "false"

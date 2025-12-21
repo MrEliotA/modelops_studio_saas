@@ -1,0 +1,18 @@
+# Example only (requires Prometheus + scraping + stable labels).
+# In production you should use a proper metric and selector for your serving workload.
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: demo-serving-prometheus
+  namespace: default
+spec:
+  scaleTargetRef:
+    name: my-serving-deployment
+  minReplicaCount: 1
+  maxReplicaCount: 10
+  triggers:
+    - type: prometheus
+      metadata:
+        serverAddress: http://prometheus-server.monitoring.svc.cluster.local:9090
+        threshold: "10"
+        query: sum(rate(http_requests_total[2m]))

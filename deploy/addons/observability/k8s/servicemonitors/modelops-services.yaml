@@ -1,0 +1,15 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: modelops-services
+  namespace: monitoring
+spec:
+  selector:
+    matchLabels:
+      modelops.io/scrape: "true"
+  namespaceSelector:
+    any: true
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 30s

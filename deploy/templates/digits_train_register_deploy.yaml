@@ -1,0 +1,21 @@
+kind: MiniPipelineTemplate
+apiVersion: modelops.studio/v1alpha1
+metadata:
+  name: digits-train-register-deploy
+spec:
+  description: Train a digits classifier and deploy it.
+  tasks:
+    - name: train
+      type: k8s_job
+      pool: gpu-pro-mig
+      image: modelops/trainer:dev
+      command: ["python", "-m", "trainer.train"]
+    - name: register
+      type: register_model
+      depends_on: ["train"]
+      model_name: digits-sklearn
+    - name: deploy
+      type: deploy_model
+      depends_on: ["register"]
+      pool: gpu-econ-timeslice
+      serving_image: modelops/serving:dev

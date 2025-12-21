@@ -1,0 +1,21 @@
+%% Mermaid diagrams
+
+flowchart LR
+  UI[Customer UI] --> API[Control Plane API]
+  API --> DB[(Postgres)]
+  API --> S3[(MinIO/S3)]
+  API --> K8S[Kubernetes API]
+
+  Controller[Controller] --> DB
+  Controller --> K8S
+
+  Agent[Metering Agent] --> DB
+  Agent --> K8S
+
+  subgraph Workloads
+    Train[Training Job] --> S3
+    Serve[Serving Deployment] --> API
+  end
+
+  K8S --> Train
+  K8S --> Serve
