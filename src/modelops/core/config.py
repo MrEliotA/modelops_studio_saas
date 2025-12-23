@@ -41,5 +41,12 @@ class Settings(BaseSettings):
 
     system_namespace: str = "modelops-system"
 
+    # Kubeflow Pipelines (KFP) integration
+    kfp_api_endpoint: str = "http://kubeflow-pipelines.kubeflow.svc.cluster.local:8888"
+    kfp_api_token: str | None = None
+    kfp_default_experiment_id: str | None = None
+    kfp_verify_ssl: bool = True
+    kfp_timeout_seconds: int = 30
+
 
 settings = Settings()

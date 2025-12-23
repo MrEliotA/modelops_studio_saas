@@ -1,0 +1,17 @@
+kind: KfpPipelineTemplate
+apiVersion: modelops.studio/v1alpha1
+metadata:
+  name: kfp-pytorch-mnist
+spec:
+  description: PyTorch MNIST training pipeline template for Kubeflow Pipelines.
+  kfp:
+    pipeline_id: "<KFP_PIPELINE_ID>"
+    pipeline_version_id: "<OPTIONAL_PIPELINE_VERSION_ID>"
+    experiment_id: "<OPTIONAL_EXPERIMENT_ID>"
+  parameters:
+    - name: epochs
+      type: int
+      default: 5
+    - name: batch_size
+      type: int
+      default: 128

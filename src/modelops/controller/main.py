@@ -10,6 +10,7 @@ from modelops.core.config import settings
 from modelops.core.logging import configure_logging
 from modelops.core.db import SessionLocal
 from modelops.domain.models import PipelineRun
+from modelops.services.kfp import refresh_kfp_run_status
 from modelops.services.pipeline import reconcile_pipeline_run
 from modelops.services.k8s_reconcile import reconcile_jobs
 
@@ -29,7 +30,10 @@ def tick() -> None:
 
         runs = db.query(PipelineRun).filter(PipelineRun.status == "RUNNING").all()
         for r in runs:
-            reconcile_pipeline_run(db, r)
+            if settings.pipeline_backend == "kfp":
+                refresh_kfp_run_status(db, r)
+            else:
+                reconcile_pipeline_run(db, r)
 
         db.commit()
     except Exception:
