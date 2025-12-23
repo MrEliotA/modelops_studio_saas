@@ -1,0 +1,17 @@
+kind: KfpPipelineTemplate
+apiVersion: modelops.studio/v1alpha1
+metadata:
+  name: kfp-tfx-taxi
+spec:
+  description: TFX taxi example pipeline template for Kubeflow Pipelines.
+  kfp:
+    pipeline_id: "<KFP_PIPELINE_ID>"
+    pipeline_version_id: "<OPTIONAL_PIPELINE_VERSION_ID>"
+    experiment_id: "<OPTIONAL_EXPERIMENT_ID>"
+  parameters:
+    - name: num_train_steps
+      type: int
+      default: 1000
+    - name: num_eval_steps
+      type: int
+      default: 100

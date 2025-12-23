@@ -1,0 +1,176 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: modelops-dashboard-admin-gpu-node
+  namespace: monitoring
+  labels:
+    grafana_dashboard: "1"
+data:
+  modelops_admin_gpu_node_observability.json: |
+    {
+      "annotations": {
+        "list": []
+      },
+      "editable": true,
+      "fiscalYearStartMonth": 0,
+      "graphTooltip": 0,
+      "id": null,
+      "links": [],
+      "panels": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percent"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "x": 0,
+            "y": 0,
+            "w": 12,
+            "h": 8
+          },
+          "id": 1,
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom"
+            }
+          },
+          "targets": [
+            {
+              "expr": "DCGM_FI_DEV_GPU_UTIL",
+              "legendFormat": "{{gpu}}/{{instance}}",
+              "refId": "A"
+            }
+          ],
+          "title": "GPU Utilization",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "bytes"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "x": 0,
+            "y": 8,
+            "w": 12,
+            "h": 8
+          },
+          "id": 2,
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom"
+            }
+          },
+          "targets": [
+            {
+              "expr": "DCGM_FI_DEV_FB_USED",
+              "legendFormat": "used {{gpu}}/{{instance}}",
+              "refId": "A"
+            },
+            {
+              "expr": "DCGM_FI_DEV_FB_TOTAL",
+              "legendFormat": "total {{gpu}}/{{instance}}",
+              "refId": "B"
+            }
+          ],
+          "title": "GPU Memory (FB)",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "watt"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "x": 0,
+            "y": 16,
+            "w": 6,
+            "h": 8
+          },
+          "id": 3,
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom"
+            }
+          },
+          "targets": [
+            {
+              "expr": "DCGM_FI_DEV_POWER_USAGE",
+              "legendFormat": "{{gpu}}/{{instance}}",
+              "refId": "A"
+            }
+          ],
+          "title": "GPU Power Usage",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "celsius"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "x": 6,
+            "y": 16,
+            "w": 6,
+            "h": 8
+          },
+          "id": 4,
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom"
+            }
+          },
+          "targets": [
+            {
+              "expr": "DCGM_FI_DEV_GPU_TEMP",
+              "legendFormat": "{{gpu}}/{{instance}}",
+              "refId": "A"
+            }
+          ],
+          "title": "GPU Temperature",
+          "type": "timeseries"
+        }
+      ],
+      "refresh": "30s",
+      "schemaVersion": 38,
+      "style": "dark",
+      "tags": ["modelops", "gpu", "dcgm"],
+      "templating": {
+        "list": []
+      },
+      "time": {
+        "from": "now-1h",
+        "to": "now"
+      },
+      "timezone": "browser",
+      "title": "ModelOps Admin - GPU Node Observability",
+      "version": 1
+    }
