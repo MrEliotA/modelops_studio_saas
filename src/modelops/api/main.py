@@ -1,16 +1,26 @@
 from __future__ import annotations
 
-from fastapi import FastAPI
-from fastapi import Response
-from modelops.core.metrics import instrument_fastapi, metrics_response
-from fastapi.middleware.cors import CORSMiddleware
-
-from modelops.core.logging import configure_logging
-from modelops.core.db import Base, engine, SessionLocal
-from modelops.services.dashboard_seed import seed_builtin_dashboards
 import os
 
-from modelops.api.routers import auth, admin, projects, templates, pipelines, deployments, usage, monitoring, billing, observability
+from fastapi import FastAPI, Response
+from fastapi.middleware.cors import CORSMiddleware
+
+from modelops.api.routers import (
+    admin,
+    auth,
+    billing,
+    deployments,
+    monitoring,
+    observability,
+    pipelines,
+    projects,
+    templates,
+    usage,
+)
+from modelops.core.db import Base, SessionLocal, engine
+from modelops.core.logging import configure_logging
+from modelops.core.metrics import instrument_fastapi, metrics_response
+from modelops.services.dashboard_seed import seed_builtin_dashboards
 
 configure_logging("INFO")
 

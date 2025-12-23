@@ -17,6 +17,11 @@ This repo is designed to work with **kube-prometheus-stack** (Prometheus Operato
 kubectl apply -f deploy/addons/observability/k8s/servicemonitors/modelops-services.yaml
 ```
 
+## Install GPU node-level observability (DCGM Exporter)
+```bash
+kubectl apply -f deploy/addons/observability/k8s/dcgm-exporter.yaml
+```
+
 ## Grafana access
 ```bash
 kubectl -n monitoring port-forward svc/kps-grafana 3000:80

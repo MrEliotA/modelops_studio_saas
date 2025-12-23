@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import re
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
 
-from modelops.api.deps import db_session, actor_from_header
+from fastapi import APIRouter, HTTPException
+
+from modelops.api.deps import ActorDep, DBSession
 from modelops.api.schemas import ProjectCreate, ProjectOut
 from modelops.domain.models import Project, Tenant
 from modelops.k8s.manager import ensure_namespace
@@ -18,7 +18,7 @@ def _namespace(tenant_id: str, name: str) -> str:
 
 
 @router.post("", response_model=ProjectOut)
-def create_project(payload: ProjectCreate, db: Session = Depends(db_session), actor=Depends(actor_from_header)) -> ProjectOut:
+def create_project(payload: ProjectCreate, db: DBSession, actor: ActorDep) -> ProjectOut:
     if actor.tenant_id != payload.tenant_id and actor.role != "admin":
         raise HTTPException(status_code=403, detail="Tenant mismatch")
 
@@ -37,7 +37,7 @@ def create_project(payload: ProjectCreate, db: Session = Depends(db_session), ac
 
 
 @router.get("", response_model=list[ProjectOut])
-def list_projects(tenant_id: str, db: Session = Depends(db_session), actor=Depends(actor_from_header)) -> list[ProjectOut]:
+def list_projects(tenant_id: str, db: DBSession, actor: ActorDep) -> list[ProjectOut]:
     if actor.tenant_id != tenant_id and actor.role != "admin":
         raise HTTPException(status_code=403, detail="Tenant mismatch")
     rows = db.query(Project).filter(Project.tenant_id == tenant_id).order_by(Project.created_at.desc()).all()

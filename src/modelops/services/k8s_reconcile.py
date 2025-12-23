@@ -1,19 +1,19 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from kubernetes.client import ApiException
 from sqlalchemy.orm import Session
 
 from modelops.domain.models import Job, Project
-from modelops.k8s.client import load, batch
+from modelops.k8s.client import batch, load
 
 log = logging.getLogger("k8s-reconcile")
 
 
 def _now():
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 def reconcile_jobs(db: Session) -> None:

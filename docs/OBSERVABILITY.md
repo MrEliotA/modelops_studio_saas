@@ -9,6 +9,7 @@ Key design decisions:
 - Route labels use **templates** (bounded cardinality).
 - Runtime exposes saturation metrics (inflight, queue depth, queue wait).
 - GPU pools expose allocator metrics (capacity, utilization, jobs pending/running).
+- GPU node metrics come from **DCGM Exporter** (utilization, memory, power, temperature).
 
 Operational add-ons you may add later:
 - OpenTelemetry traces for end-to-end correlation.

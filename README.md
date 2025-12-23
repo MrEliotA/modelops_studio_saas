@@ -11,9 +11,11 @@ It includes:
 - ✅ Artifacts (MinIO/S3)
 - ✅ Model registry (models + versions)
 - ✅ Deployments + serving runtime (predict + explain)
-- ✅ Monitoring & observability (Prometheus + Grafana dashboards)
+- ✅ Monitoring & observability (Prometheus + Grafana dashboards + DCGM GPU node metrics)
 - ✅ Metering & billing (usage ledger + invoices)
 - ✅ Autoscaling (KEDA for core services, ready to extend to serving)
+- ✅ Kubeflow Pipelines (KFP) integration (template-driven)
+- ✅ LLM modules (Embeddings, RAG, Eval, Labeling helpers)
 
 > Codebase: Python (FastAPI + SQLAlchemy) + Kubernetes API (client) + containerized workloads.
 
@@ -153,6 +155,11 @@ Sample screenshot:
 ```bash
 make obs-install
 make obs-dashboards
+```
+
+### Install GPU node-level observability (DCGM Exporter)
+```bash
+kubectl apply -f deploy/addons/observability/k8s/dcgm-exporter.yaml
 ```
 
 ---

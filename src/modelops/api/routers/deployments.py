@@ -1,27 +1,27 @@
 from __future__ import annotations
 
 import time
-import httpx
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
 
-from modelops.api.deps import db_session, actor_from_header
-from modelops.domain.models import Deployment, Project, InferenceLog
-from modelops.services.metering import record_request_usage
+import httpx
+from fastapi import APIRouter, HTTPException
+
+from modelops.api.deps import ActorDep, DBSession
 from modelops.core.metrics import observe_inference
+from modelops.domain.models import Deployment, InferenceLog, Project
+from modelops.services.metering import record_request_usage
 
 router = APIRouter()
 
 
 @router.get("")
-def list_deployments(tenant_id: str, db: Session = Depends(db_session), actor=Depends(actor_from_header)):
+def list_deployments(tenant_id: str, db: DBSession, actor: ActorDep):
     if actor.tenant_id != tenant_id and actor.role != "admin":
         raise HTTPException(status_code=403, detail="Tenant mismatch")
     rows = db.query(Deployment).filter(Deployment.tenant_id == tenant_id).order_by(Deployment.created_at.desc()).all()
     return [{"id": r.id, "name": r.name, "status": r.status, "k8s_service": r.k8s_service, "created_at": r.created_at} for r in rows]
 
 
-async def _forward(db: Session, dep: Deployment, project: Project, path: str, payload: dict, kind: str):
+async def _forward(db: DBSession, dep: Deployment, project: Project, path: str, payload: dict, kind: str):
     url = f"http://{dep.k8s_service}.{project.namespace}.svc.cluster.local{path}"
     start = time.time()
     status_code = 502
@@ -72,7 +72,7 @@ async def _forward(db: Session, dep: Deployment, project: Project, path: str, pa
 
 
 @router.post("/{deployment_id}/predict")
-async def predict(deployment_id: str, payload: dict, db: Session = Depends(db_session), actor=Depends(actor_from_header)):
+async def predict(deployment_id: str, payload: dict, db: DBSession, actor: ActorDep):
     dep = db.query(Deployment).filter(Deployment.id == deployment_id).first()
     if not dep:
         raise HTTPException(status_code=404, detail="Deployment not found")
@@ -85,14 +85,14 @@ async def predict(deployment_id: str, payload: dict, db: Session = Depends(db_se
 
     try:
         return await _forward(db, dep, project, "/predict", payload, "predict")
-    except httpx.HTTPStatusError as e:
-        raise HTTPException(status_code=e.response.status_code, detail="Runtime error")
-    except Exception:
-        raise HTTPException(status_code=502, detail="Runtime unavailable")
+    except httpx.HTTPStatusError as exc:
+        raise HTTPException(status_code=exc.response.status_code, detail="Runtime error") from exc
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail="Runtime unavailable") from exc
 
 
 @router.post("/{deployment_id}/explain")
-async def explain(deployment_id: str, payload: dict, db: Session = Depends(db_session), actor=Depends(actor_from_header)):
+async def explain(deployment_id: str, payload: dict, db: DBSession, actor: ActorDep):
     dep = db.query(Deployment).filter(Deployment.id == deployment_id).first()
     if not dep:
         raise HTTPException(status_code=404, detail="Deployment not found")
@@ -105,7 +105,7 @@ async def explain(deployment_id: str, payload: dict, db: Session = Depends(db_se
 
     try:
         return await _forward(db, dep, project, "/explain", payload, "explain")
-    except httpx.HTTPStatusError as e:
-        raise HTTPException(status_code=e.response.status_code, detail="Runtime error")
-    except Exception:
-        raise HTTPException(status_code=502, detail="Runtime unavailable")
+    except httpx.HTTPStatusError as exc:
+        raise HTTPException(status_code=exc.response.status_code, detail="Runtime error") from exc
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail="Runtime unavailable") from exc

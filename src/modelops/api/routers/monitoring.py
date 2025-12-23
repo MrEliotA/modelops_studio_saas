@@ -1,17 +1,16 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, HTTPException
 from sqlalchemy import func
-from sqlalchemy.orm import Session
 
-from modelops.api.deps import db_session, actor_from_header
-from modelops.domain.models import InferenceLog, Deployment
+from modelops.api.deps import ActorDep, DBSession
+from modelops.domain.models import Deployment, InferenceLog
 
 router = APIRouter()
 
 
 @router.get("/summary")
-def summary(tenant_id: str, db: Session = Depends(db_session), actor=Depends(actor_from_header)):
+def summary(tenant_id: str, db: DBSession, actor: ActorDep):
     if actor.tenant_id != tenant_id and actor.role != "admin":
         raise HTTPException(status_code=403, detail="Tenant mismatch")
 

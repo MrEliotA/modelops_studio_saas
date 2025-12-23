@@ -1,19 +1,18 @@
 from __future__ import annotations
 
+import importlib.util
 import os
 import threading
 import time
 from dataclasses import dataclass
-from typing import List, Optional
 
 import boto3
-from botocore.client import Config
 import joblib
 import numpy as np
+from botocore.client import Config
 from fastapi import FastAPI, Request, Response
+from prometheus_client import CONTENT_TYPE_LATEST, Counter, Gauge, Histogram, generate_latest
 from pydantic import BaseModel, Field
-from prometheus_client import Counter, Gauge, Histogram, CONTENT_TYPE_LATEST, generate_latest
-
 
 # ---------------------------
 # Identity labels (injected by platform)
@@ -88,20 +87,20 @@ _wait_lock = threading.Lock()
 
 
 class PredictRequest(BaseModel):
-    instances: List[List[float]] = Field(..., description="N x D float features")
+    instances: list[list[float]] = Field(..., description="N x D float features")
 
 
 class PredictResponse(BaseModel):
-    predictions: List[int]
-    probabilities: List[List[float]]
+    predictions: list[int]
+    probabilities: list[list[float]]
 
 
 class ExplainRequest(BaseModel):
-    instances: List[List[float]]
+    instances: list[list[float]]
 
 
 class ExplainResponse(BaseModel):
-    explanations: List[dict]
+    explanations: list[dict]
 
 
 @dataclass
@@ -130,27 +129,20 @@ def _start_nvml_polling() -> None:
     if not enabled:
         return
 
-    try:
-        from pynvml import (
-            nvmlInit,
-            nvmlDeviceGetCount,
-            nvmlDeviceGetHandleByIndex,
-            nvmlDeviceGetUtilizationRates,
-            nvmlDeviceGetMemoryInfo,
-        )
-    except Exception:
+    if importlib.util.find_spec("pynvml") is None:
         return
+    import pynvml
 
     def _loop():
         try:
-            nvmlInit()
+            pynvml.nvmlInit()
             while True:
                 try:
-                    n = int(nvmlDeviceGetCount())
+                    n = int(pynvml.nvmlDeviceGetCount())
                     for i in range(n):
-                        h = nvmlDeviceGetHandleByIndex(i)
-                        util = nvmlDeviceGetUtilizationRates(h)
-                        mem = nvmlDeviceGetMemoryInfo(h)
+                        handle = pynvml.nvmlDeviceGetHandleByIndex(i)
+                        util = pynvml.nvmlDeviceGetUtilizationRates(handle)
+                        mem = pynvml.nvmlDeviceGetMemoryInfo(handle)
                         GPU_UTIL.labels(TENANT_ID, PROJECT_ID, DEPLOYMENT_ID, str(i)).set(float(util.gpu))
                         GPU_MEM_USED.labels(TENANT_ID, PROJECT_ID, DEPLOYMENT_ID, str(i)).set(float(mem.used))
                         GPU_MEM_TOTAL.labels(TENANT_ID, PROJECT_ID, DEPLOYMENT_ID, str(i)).set(float(mem.total))
@@ -243,8 +235,8 @@ def metrics():
 @app.post("/predict", response_model=PredictResponse)
 def predict(req: PredictRequest) -> PredictResponse:
     def _fn():
-        X = np.array(req.instances, dtype=np.float32)
-        proba = _model.predict_proba(X)
+        features = np.array(req.instances, dtype=np.float32)
+        proba = _model.predict_proba(features)
         pred = proba.argmax(axis=1).astype(int).tolist()
         return PredictResponse(predictions=pred, probabilities=proba.tolist())
 
@@ -254,9 +246,9 @@ def predict(req: PredictRequest) -> PredictResponse:
 @app.post("/explain", response_model=ExplainResponse)
 def explain(req: ExplainRequest) -> ExplainResponse:
     def _fn():
-        X = np.array(req.instances, dtype=np.float32)
+        features = np.array(req.instances, dtype=np.float32)
         out = []
-        for row in X:
+        for row in features:
             idx = np.argsort(np.abs(row))[::-1][:8].tolist()
             out.append({"top_indices": idx, "top_values": [float(row[i]) for i in idx]})
         return ExplainResponse(explanations=out)

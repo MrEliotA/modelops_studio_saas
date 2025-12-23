@@ -2,7 +2,13 @@
 from __future__ import annotations
 
 import argparse
+
 import requests
+
+
+def _read_template(path: str) -> str:
+    with open(path, encoding="utf-8") as handle:
+        return handle.read()
 
 
 def main() -> None:
@@ -60,15 +66,42 @@ def main() -> None:
         requests.post(f"{api}/v1/admin/plans", headers=h, json=p).raise_for_status()
 
     # Mini pipeline template
-    tpl = {
-        "tenant_id": "admin",
-        "name": "digits-train-register-deploy",
-        "version": "1.0.0",
-        "description": "Train a digits classifier, register, deploy serving.",
-        "tags": ["demo", "digits", "train", "deploy"],
-        "template_yaml": open("deploy/templates/digits_train_register_deploy.yaml", "r", encoding="utf-8").read(),
-    }
-    requests.post(f"{api}/v1/admin/templates", headers=h, json=tpl).raise_for_status()
+    templates = [
+        {
+            "tenant_id": "admin",
+            "name": "digits-train-register-deploy",
+            "version": "1.0.0",
+            "description": "Train a digits classifier, register, deploy serving.",
+            "tags": ["demo", "digits", "train", "deploy"],
+            "template_yaml": _read_template("deploy/templates/digits_train_register_deploy.yaml"),
+        },
+        {
+            "tenant_id": "admin",
+            "name": "kfp-xgboost-iris",
+            "version": "1.0.0",
+            "description": "Kubeflow pipeline template: XGBoost Iris classifier.",
+            "tags": ["kubeflow", "kfp", "xgboost", "iris"],
+            "template_yaml": _read_template("deploy/templates/kfp_xgboost_iris.yaml"),
+        },
+        {
+            "tenant_id": "admin",
+            "name": "kfp-pytorch-mnist",
+            "version": "1.0.0",
+            "description": "Kubeflow pipeline template: PyTorch MNIST training.",
+            "tags": ["kubeflow", "kfp", "pytorch", "mnist"],
+            "template_yaml": _read_template("deploy/templates/kfp_pytorch_mnist.yaml"),
+        },
+        {
+            "tenant_id": "admin",
+            "name": "kfp-tfx-taxi",
+            "version": "1.0.0",
+            "description": "Kubeflow pipeline template: TFX taxi example.",
+            "tags": ["kubeflow", "kfp", "tfx", "taxi"],
+            "template_yaml": _read_template("deploy/templates/kfp_tfx_taxi.yaml"),
+        },
+    ]
+    for tpl in templates:
+        requests.post(f"{api}/v1/admin/templates", headers=h, json=tpl).raise_for_status()
 
 
 if __name__ == "__main__":

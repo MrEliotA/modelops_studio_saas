@@ -5,13 +5,13 @@ import os
 from dataclasses import dataclass
 
 import boto3
-from botocore.client import Config
 import joblib
 import numpy as np
+from botocore.client import Config
 from sklearn.datasets import load_digits
-from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score
+from sklearn.model_selection import train_test_split
 
 
 @dataclass(frozen=True)
@@ -56,21 +56,27 @@ def main() -> None:
     ensure_bucket(s3, cfg.bucket)
 
     digits = load_digits()
-    X = digits.data.astype(np.float32)
+    features = digits.data.astype(np.float32)
     y = digits.target.astype(np.int64)
 
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
+    features_train, features_test, y_train, y_test = train_test_split(
+        features, y, test_size=0.2, random_state=42, stratify=y
+    )
 
     model = LogisticRegression(max_iter=500, n_jobs=1)
-    model.fit(X_train, y_train)
+    model.fit(features_train, y_train)
 
-    y_pred = model.predict(X_test)
+    y_pred = model.predict(features_test)
     acc = float(accuracy_score(y_test, y_pred))
 
     model_path = "/tmp/model.pkl"
     joblib.dump(model, model_path)
 
-    metrics = {"accuracy": acc, "n_train": int(X_train.shape[0]), "n_test": int(X_test.shape[0])}
+    metrics = {
+        "accuracy": acc,
+        "n_train": int(features_train.shape[0]),
+        "n_test": int(features_test.shape[0]),
+    }
     metrics_path = "/tmp/metrics.json"
     with open(metrics_path, "w", encoding="utf-8") as f:
         json.dump(metrics, f)

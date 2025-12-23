@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 from fastapi import APIRouter
-from modelops.core.security import Actor, issue_token
+
 from modelops.api.schemas import LoginRequest, LoginResponse
+from modelops.core.security import Actor, issue_token
 
 router = APIRouter()
 

@@ -2,21 +2,20 @@ from __future__ import annotations
 
 import time
 from collections import defaultdict
-from datetime import datetime, timedelta, timezone
-from typing import Callable
+from collections.abc import Callable
+from datetime import UTC, datetime, timedelta
 
-from prometheus_client import Counter, Gauge, Histogram, CONTENT_TYPE_LATEST, generate_latest
+from prometheus_client import CONTENT_TYPE_LATEST, Counter, Gauge, Histogram, generate_latest
 from starlette.requests import Request
 from starlette.responses import Response
 
 from modelops.core.db import SessionLocal
 from modelops.domain.models import (
-    UsageLedger,
     GPUNodePool,
-    PoolAllocation,
     Job,
+    PoolAllocation,
+    UsageLedger,
 )
-
 
 # ---------------------------
 # HTTP (generic) metrics
@@ -158,7 +157,7 @@ def _unit_price_cents_for(pool: GPUNodePool | None, resource_type: str) -> int:
 
 
 def _refresh_cost_metrics(db) -> None:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     start = now - timedelta(days=30)
     rows = db.query(UsageLedger).filter(UsageLedger.created_at >= start).all()
 

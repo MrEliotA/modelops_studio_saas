@@ -1,0 +1,17 @@
+kind: KfpPipelineTemplate
+apiVersion: modelops.studio/v1alpha1
+metadata:
+  name: kfp-xgboost-iris
+spec:
+  description: Classic Iris classifier pipeline using XGBoost on Kubeflow Pipelines.
+  kfp:
+    pipeline_id: "<KFP_PIPELINE_ID>"
+    pipeline_version_id: "<OPTIONAL_PIPELINE_VERSION_ID>"
+    experiment_id: "<OPTIONAL_EXPERIMENT_ID>"
+  parameters:
+    - name: n_estimators
+      type: int
+      default: 200
+    - name: max_depth
+      type: int
+      default: 6

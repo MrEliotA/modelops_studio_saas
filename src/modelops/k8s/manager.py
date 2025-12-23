@@ -3,29 +3,31 @@ from __future__ import annotations
 from typing import Any
 
 from kubernetes.client import (
-    V1Namespace,
     ApiException,
     CustomObjectsApi,
-    V1ObjectMeta,
-    V1Job,
-    V1JobSpec,
-    V1PodTemplateSpec,
-    V1PodSpec,
     V1Container,
-    V1ResourceRequirements,
-    V1EnvVar,
-    V1Toleration,
+    V1ContainerPort,
     V1Deployment,
     V1DeploymentSpec,
+    V1EnvVar,
+    V1Job,
+    V1JobSpec,
     V1LabelSelector,
-    V1ContainerPort,
+    V1Namespace,
+    V1ObjectMeta,
+    V1PodSpec,
+    V1PodTemplateSpec,
+    V1ResourceRequirements,
     V1Service,
-    V1ServiceSpec,
     V1ServicePort,
+    V1ServiceSpec,
+    V1Toleration,
 )
 
-from .client import load, core, apps, batch
 from modelops.core.config import settings
+
+from .client import apps, batch, core, load
+
 
 def _with_gpu(base: dict[str, str], resource_name: str | None, units: int) -> dict[str, str]:
     if not settings.enable_real_gpu_requests:

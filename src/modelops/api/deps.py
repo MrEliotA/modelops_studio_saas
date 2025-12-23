@@ -1,13 +1,15 @@
 from __future__ import annotations
 
+from typing import Annotated
+
 from fastapi import Depends, Header, HTTPException
 from sqlalchemy.orm import Session
 
 from modelops.core.db import SessionLocal
-from modelops.core.security import verify_token, Actor
+from modelops.core.security import Actor, verify_token
 
 
-def db_session():
+def db_session() -> Session:
     db = SessionLocal()
     try:
         yield db
@@ -21,11 +23,18 @@ def actor_from_header(authorization: str = Header(default="")) -> Actor:
     token = authorization.split(" ", 1)[1]
     try:
         return verify_token(token)
-    except Exception:
-        raise HTTPException(status_code=401, detail="Invalid token")
+    except Exception as exc:
+        raise HTTPException(status_code=401, detail="Invalid token") from exc
 
 
-def require_admin(actor: Actor = Depends(actor_from_header)) -> Actor:
+ActorDep = Annotated[Actor, Depends(actor_from_header)]
+
+
+def require_admin(actor: ActorDep) -> Actor:
     if actor.role != "admin":
         raise HTTPException(status_code=403, detail="Admin required")
     return actor
+
+
+DBSession = Annotated[Session, Depends(db_session)]
+AdminActorDep = Annotated[Actor, Depends(require_admin)]

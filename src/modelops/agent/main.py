@@ -2,17 +2,17 @@ from __future__ import annotations
 
 import logging
 import time
-from prometheus_client import Counter, start_http_server
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
+from prometheus_client import Counter, start_http_server
 from sqlalchemy.orm import Session
 
 from modelops.core.config import settings
-from modelops.core.logging import configure_logging
 from modelops.core.db import SessionLocal
+from modelops.core.logging import configure_logging
 from modelops.domain.models import Job, UsageLedger
-from modelops.services.metering import record_job_usage
 from modelops.services.allocator import release_allocation
+from modelops.services.metering import record_job_usage
 
 configure_logging("INFO")
 log = logging.getLogger("agent")
@@ -23,7 +23,7 @@ JOBS_METERED_TOTAL = Counter("jobs_metered_total", "Jobs metered")
 
 
 def _now() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 def tick() -> None:

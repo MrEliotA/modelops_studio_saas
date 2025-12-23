@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
+
 from sqlalchemy.orm import Session
 
 from modelops.domain.models import Invoice, InvoiceLineItem, UsageLedger

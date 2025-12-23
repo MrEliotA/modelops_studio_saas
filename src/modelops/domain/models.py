@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from sqlalchemy import String, DateTime, Integer, JSON, ForeignKey, UniqueConstraint, Boolean
+
+from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from modelops.core.db import Base

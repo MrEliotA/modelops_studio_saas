@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 import yaml
@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 
 from modelops.artifacts.s3 import ensure_bucket, s3_uri
 from modelops.domain.models import (
+    Deployment,
     GPUNodePool,
     Job,
     Model,
@@ -17,21 +18,31 @@ from modelops.domain.models import (
     PipelineTask,
     PipelineTemplate,
     Project,
-    Deployment,
 )
-from modelops.k8s.manager import ensure_namespace, create_job, create_serving_deployment
-from modelops.services.allocator import acquire_allocation, release_allocation, CapacityError
+from modelops.k8s.manager import create_job, create_serving_deployment, ensure_namespace
+from modelops.services.allocator import CapacityError, acquire_allocation
 
 log = logging.getLogger("pipeline")
 
 
 def _now() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
-def _parse_template(yaml_text: str) -> dict[str, Any]:
+def _load_template(yaml_text: str) -> dict[str, Any]:
     doc = yaml.safe_load(yaml_text)
-    if not isinstance(doc, dict) or doc.get("kind") != "MiniPipelineTemplate":
+    if not isinstance(doc, dict) or "kind" not in doc:
+        raise ValueError("Invalid template format")
+    return doc
+
+
+def template_kind(yaml_text: str) -> str:
+    return str(_load_template(yaml_text).get("kind"))
+
+
+def _parse_mini_template(yaml_text: str) -> dict[str, Any]:
+    doc = _load_template(yaml_text)
+    if doc.get("kind") != "MiniPipelineTemplate":
         raise ValueError("Invalid template kind")
     return doc
 
@@ -42,7 +53,10 @@ def ensure_tasks_for_run(db: Session, run: PipelineRun) -> None:
         return
 
     tpl = db.query(PipelineTemplate).filter(PipelineTemplate.id == run.template_id).one()
-    doc = _parse_template(tpl.template_yaml)
+    doc = _load_template(tpl.template_yaml)
+    if doc.get("kind") != "MiniPipelineTemplate":
+        log.info("skipping task creation for non-mini template", extra={"template_id": tpl.id})
+        return
     tasks = doc["spec"]["tasks"]
 
     for t in tasks:
@@ -62,6 +76,11 @@ def ensure_tasks_for_run(db: Session, run: PipelineRun) -> None:
 
 
 def reconcile_pipeline_run(db: Session, run: PipelineRun) -> None:
+    tpl = db.query(PipelineTemplate).filter(PipelineTemplate.id == run.template_id).one()
+    doc = _load_template(tpl.template_yaml)
+    if doc.get("kind") != "MiniPipelineTemplate":
+        return
+
     ensure_tasks_for_run(db, run)
 
     tasks = db.query(PipelineTask).filter(PipelineTask.run_id == run.id).all()
@@ -115,7 +134,7 @@ def _pool_by_name(db: Session, name: str) -> GPUNodePool:
 
 def _exec_k8s_job(db: Session, run: PipelineRun, task: PipelineTask) -> None:
     tpl = db.query(PipelineTemplate).filter(PipelineTemplate.id == run.template_id).one()
-    doc = _parse_template(tpl.template_yaml)
+    doc = _parse_mini_template(tpl.template_yaml)
     tdef = next(x for x in doc["spec"]["tasks"] if x["name"] == task.name)
 
     project = db.query(Project).filter(Project.id == run.project_id).one()
@@ -196,7 +215,7 @@ def _latest_training_job(db: Session, run: PipelineRun) -> Job | None:
 
 def _exec_register(db: Session, run: PipelineRun, task: PipelineTask) -> None:
     tpl = db.query(PipelineTemplate).filter(PipelineTemplate.id == run.template_id).one()
-    doc = _parse_template(tpl.template_yaml)
+    doc = _parse_mini_template(tpl.template_yaml)
     tdef = next(x for x in doc["spec"]["tasks"] if x["name"] == task.name)
 
     job = _latest_training_job(db, run)
@@ -229,7 +248,7 @@ def _exec_register(db: Session, run: PipelineRun, task: PipelineTask) -> None:
 
 def _exec_deploy(db: Session, run: PipelineRun, task: PipelineTask) -> None:
     tpl = db.query(PipelineTemplate).filter(PipelineTemplate.id == run.template_id).one()
-    doc = _parse_template(tpl.template_yaml)
+    doc = _parse_mini_template(tpl.template_yaml)
     tdef = next(x for x in doc["spec"]["tasks"] if x["name"] == task.name)
 
     project = db.query(Project).filter(Project.id == run.project_id).one()

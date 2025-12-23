@@ -2,13 +2,12 @@ from __future__ import annotations
 
 import json
 from typing import Any
-from fastapi import APIRouter, Depends, HTTPException
+
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
-from sqlalchemy.orm import Session
 
-from modelops.api.deps import db_session, actor_from_header
+from modelops.api.deps import ActorDep, DBSession
 from modelops.domain.models import DashboardAsset
-
 
 router = APIRouter()
 
@@ -34,13 +33,11 @@ def _can_write(actor, asset: DashboardAsset | None, body: DashboardUpsert) -> bo
     if body.scope == "admin":
         return actor.role == "admin"
     # User dashboards: tenant admin or platform admin. In this demo, role=admin is platform admin.
-    if body.tenant_id is not None and actor.tenant_id != body.tenant_id and actor.role != "admin":
-        return False
-    return True
+    return body.tenant_id is None or actor.tenant_id == body.tenant_id or actor.role == "admin"
 
 
 @router.get("/dashboards")
-def list_dashboards(scope: str, tenant_id: str | None = None, db: Session = Depends(db_session), actor=Depends(actor_from_header)):
+def list_dashboards(scope: str, db: DBSession, actor: ActorDep, tenant_id: str | None = None):
     if scope not in ("admin", "user"):
         raise HTTPException(status_code=400, detail="scope must be admin|user")
 
@@ -68,7 +65,7 @@ def list_dashboards(scope: str, tenant_id: str | None = None, db: Session = Depe
 
 
 @router.get("/dashboards/{dashboard_id}")
-def get_dashboard(dashboard_id: str, db: Session = Depends(db_session), actor=Depends(actor_from_header)):
+def get_dashboard(dashboard_id: str, db: DBSession, actor: ActorDep):
     r = db.query(DashboardAsset).filter(DashboardAsset.id == dashboard_id).first()
     if not r:
         raise HTTPException(status_code=404, detail="dashboard not found")
@@ -87,7 +84,7 @@ def get_dashboard(dashboard_id: str, db: Session = Depends(db_session), actor=De
 
 
 @router.post("/dashboards")
-def create_dashboard(body: DashboardUpsert, db: Session = Depends(db_session), actor=Depends(actor_from_header)):
+def create_dashboard(body: DashboardUpsert, db: DBSession, actor: ActorDep):
     if body.scope not in ("admin", "user"):
         raise HTTPException(status_code=400, detail="scope must be admin|user")
     if not _can_write(actor, None, body):
@@ -108,7 +105,7 @@ def create_dashboard(body: DashboardUpsert, db: Session = Depends(db_session), a
 
 
 @router.put("/dashboards/{dashboard_id}")
-def update_dashboard(dashboard_id: str, body: DashboardUpsert, db: Session = Depends(db_session), actor=Depends(actor_from_header)):
+def update_dashboard(dashboard_id: str, body: DashboardUpsert, db: DBSession, actor: ActorDep):
     r = db.query(DashboardAsset).filter(DashboardAsset.id == dashboard_id).first()
     if not r:
         raise HTTPException(status_code=404, detail="dashboard not found")
@@ -128,7 +125,7 @@ def update_dashboard(dashboard_id: str, body: DashboardUpsert, db: Session = Dep
 
 
 @router.delete("/dashboards/{dashboard_id}")
-def delete_dashboard(dashboard_id: str, db: Session = Depends(db_session), actor=Depends(actor_from_header)):
+def delete_dashboard(dashboard_id: str, db: DBSession, actor: ActorDep):
     r = db.query(DashboardAsset).filter(DashboardAsset.id == dashboard_id).first()
     if not r:
         raise HTTPException(status_code=404, detail="dashboard not found")
@@ -145,10 +142,10 @@ def delete_dashboard(dashboard_id: str, db: Session = Depends(db_session), actor
 @router.get("/dashboards/{dashboard_id}/export_configmap")
 def export_configmap(
     dashboard_id: str,
+    db: DBSession,
+    actor: ActorDep,
     namespace: str = "monitoring",
     configmap_name: str | None = None,
-    db: Session = Depends(db_session),
-    actor=Depends(actor_from_header),
 ):
     r = db.query(DashboardAsset).filter(DashboardAsset.id == dashboard_id).first()
     if not r:

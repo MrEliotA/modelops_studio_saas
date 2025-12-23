@@ -1,2 +1,3 @@
+from . import observability as observability
 
-from . import observability
+__all__ = ["observability"]

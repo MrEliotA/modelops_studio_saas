@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 from datetime import datetime
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
 
-from modelops.api.deps import db_session, actor_from_header
+from fastapi import APIRouter, HTTPException
+
+from modelops.api.deps import ActorDep, DBSession
 from modelops.domain.models import Invoice, InvoiceLineItem
 from modelops.services.invoicing import create_invoice_for_period
 
@@ -12,7 +12,7 @@ router = APIRouter()
 
 
 @router.post("/invoices")
-def create_invoice(tenant_id: str, start: datetime, end: datetime, db: Session = Depends(db_session), actor=Depends(actor_from_header)):
+def create_invoice(tenant_id: str, start: datetime, end: datetime, db: DBSession, actor: ActorDep):
     if actor.tenant_id != tenant_id and actor.role != "admin":
         raise HTTPException(status_code=403, detail="Tenant mismatch")
     inv = create_invoice_for_period(db, tenant_id=tenant_id, start=start, end=end)
@@ -20,7 +20,7 @@ def create_invoice(tenant_id: str, start: datetime, end: datetime, db: Session =
 
 
 @router.get("/invoices")
-def list_invoices(tenant_id: str, db: Session = Depends(db_session), actor=Depends(actor_from_header)):
+def list_invoices(tenant_id: str, db: DBSession, actor: ActorDep):
     if actor.tenant_id != tenant_id and actor.role != "admin":
         raise HTTPException(status_code=403, detail="Tenant mismatch")
     rows = db.query(Invoice).filter(Invoice.tenant_id == tenant_id).order_by(Invoice.created_at.desc()).all()
@@ -28,7 +28,7 @@ def list_invoices(tenant_id: str, db: Session = Depends(db_session), actor=Depen
 
 
 @router.get("/invoices/{invoice_id}")
-def get_invoice(invoice_id: str, db: Session = Depends(db_session), actor=Depends(actor_from_header)):
+def get_invoice(invoice_id: str, db: DBSession, actor: ActorDep):
     inv = db.query(Invoice).filter(Invoice.id == invoice_id).first()
     if not inv:
         raise HTTPException(status_code=404, detail="Invoice not found")
@@ -43,7 +43,7 @@ def get_invoice(invoice_id: str, db: Session = Depends(db_session), actor=Depend
         "total_amount_cents": inv.total_amount,
         "currency": inv.currency,
         "line_items": [
-            {"sku": l.sku, "quantity": l.quantity, "unit_price_cents": l.unit_price_cents, "amount_cents": l.amount_cents, "meta": l.meta}
-            for l in lines
+            {"sku": line.sku, "quantity": line.quantity, "unit_price_cents": line.unit_price_cents, "amount_cents": line.amount_cents, "meta": line.meta}
+            for line in lines
         ],
     }

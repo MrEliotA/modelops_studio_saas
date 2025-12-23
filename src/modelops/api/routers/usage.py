@@ -1,18 +1,18 @@
 from __future__ import annotations
 
 from datetime import datetime
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+
+from fastapi import APIRouter, HTTPException
 from sqlalchemy import and_
 
-from modelops.api.deps import db_session, actor_from_header
+from modelops.api.deps import ActorDep, DBSession
 from modelops.domain.models import UsageLedger
 
 router = APIRouter()
 
 
 @router.get("/ledger")
-def ledger(tenant_id: str, start: datetime, end: datetime, db: Session = Depends(db_session), actor=Depends(actor_from_header)):
+def ledger(tenant_id: str, start: datetime, end: datetime, db: DBSession, actor: ActorDep):
     if actor.tenant_id != tenant_id and actor.role != "admin":
         raise HTTPException(status_code=403, detail="Tenant mismatch")
 

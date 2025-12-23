@@ -1,19 +1,19 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from decimal import Decimal, ROUND_HALF_UP
 from datetime import datetime
+from decimal import ROUND_HALF_UP, Decimal
 
-from sqlalchemy.orm import Session
 from sqlalchemy import and_
+from sqlalchemy.orm import Session
 
 from modelops.domain.models import (
     GPUNodePool,
+    Invoice,
+    InvoiceLineItem,
     Plan,
     TenantPlan,
     UsageLedger,
-    Invoice,
-    InvoiceLineItem,
 )
 
 
