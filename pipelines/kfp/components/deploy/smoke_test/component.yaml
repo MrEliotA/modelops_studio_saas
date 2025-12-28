@@ -1,0 +1,18 @@
+name: smoke-test
+description: "Run a lightweight smoke test against a deployed endpoint"
+inputs:
+  - { name: Endpoint url, type: String }
+outputs:
+  - { name: Smoke report, type: Json }
+implementation:
+  container:
+    image: modelops/kfp-glue:0.1.0
+    command:
+      - python
+      - -m
+      - modelops_glue.smoke_test
+    args:
+      - --endpoint-url
+      - { inputValue: Endpoint url }
+      - --report-out
+      - { outputPath: Smoke report }

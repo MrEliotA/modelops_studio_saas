@@ -1,0 +1,20 @@
+name: register-model
+description: "Register a model version in ModelOps registry (HTTP API placeholder)"
+inputs:
+  - { name: Model artifact, type: Model }
+  - { name: Metrics, type: Json }
+  - { name: Registry group, type: String, default: "default" }
+outputs:
+  - { name: Registry version id, type: String }
+implementation:
+  container:
+    image: curlimages/curl:8.10.1
+    command:
+      - sh
+      - -c
+    args:
+      - |
+        set -eu
+        # Demo: replace with a real registry API call.
+        echo "regv_demo_$(date +%s)" > "$0"
+      - { outputPath: Registry version id }

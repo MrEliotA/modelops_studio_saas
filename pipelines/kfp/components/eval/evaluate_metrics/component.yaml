@@ -1,0 +1,27 @@
+name: evaluate-metrics
+description: "Compute a pass/fail decision based on metrics and thresholds"
+inputs:
+  - { name: Metrics in, type: Json }
+  - { name: Acceptance metric, type: String, default: "rmse" }
+  - { name: Threshold, type: Float, default: "0.8" }
+outputs:
+  - { name: Decision, type: Json }
+  - { name: Eval report, type: Json }
+implementation:
+  container:
+    image: modelops/kfp-ml-cpu:0.1.0
+    command:
+      - python
+      - -m
+      - modelops_ml.evaluate
+    args:
+      - --metrics-in
+      - { inputPath: Metrics in }
+      - --acceptance-metric
+      - { inputValue: Acceptance metric }
+      - --threshold
+      - { inputValue: Threshold }
+      - --decision-out
+      - { outputPath: Decision }
+      - --report-out
+      - { outputPath: Eval report }

@@ -1,0 +1,18 @@
+name: deploy-staging
+description: "Deploy a registry model version to staging (API placeholder)"
+inputs:
+  - { name: Model version id, type: String }
+outputs:
+  - { name: Endpoint url, type: String }
+implementation:
+  container:
+    image: curlimages/curl:8.10.1
+    command:
+      - sh
+      - -c
+    args:
+      - |
+        set -eu
+        # Demo: replace with your serving control-plane API.
+        echo "https://staging.example.internal/predict" > "$0"
+      - { outputPath: Endpoint url }

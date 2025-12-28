@@ -1,0 +1,33 @@
+name: opencost-allocation-pull
+description: "Pull OpenCost /allocation API response as raw JSON"
+inputs:
+  - { name: Base URL, type: String }
+  - { name: Window, type: String, default: "7d" }
+  - { name: Aggregate, type: String, default: "namespace" }
+  - { name: Resolution, type: String, default: "1m" }
+  - { name: Include idle, type: Boolean, default: "false" }
+  - { name: Share idle, type: Boolean, default: "true" }
+outputs:
+  - { name: Allocation raw, type: Json }
+implementation:
+  container:
+    image: modelops/kfp-finops:0.1.0
+    command:
+      - python
+      - -m
+      - modelops_finops.opencost_pull
+    args:
+      - --base-url
+      - { inputValue: Base URL }
+      - --window
+      - { inputValue: Window }
+      - --aggregate
+      - { inputValue: Aggregate }
+      - --resolution
+      - { inputValue: Resolution }
+      - --include-idle
+      - { inputValue: Include idle }
+      - --share-idle
+      - { inputValue: Share idle }
+      - --raw-out
+      - { outputPath: Allocation raw }

@@ -1,0 +1,19 @@
+name: promote-prod
+description: "Promote staging deployment to production (API placeholder)"
+inputs:
+  - { name: Model version id, type: String }
+  - { name: Traffic shift, type: String, default: "replace" }
+outputs:
+  - { name: Prod deployment id, type: String }
+implementation:
+  container:
+    image: curlimages/curl:8.10.1
+    command:
+      - sh
+      - -c
+    args:
+      - |
+        set -eu
+        # Demo: replace with a real promotion API call.
+        echo "prod_deploy_demo_$(date +%s)" > "$0"
+      - { outputPath: Prod deployment id }

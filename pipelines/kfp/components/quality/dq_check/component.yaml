@@ -1,0 +1,27 @@
+name: dq-check
+description: "Dataset quality gate (schema/missing/drift placeholder)"
+inputs:
+  - { name: Dataset URI, type: String }
+  - { name: Ruleset, type: String, default: "default" }
+  - { name: Fail mode, type: String, default: "stop" }
+outputs:
+  - { name: DQ report, type: Json }
+  - { name: Proceed, type: Boolean }
+implementation:
+  container:
+    image: modelops/kfp-glue:0.1.0
+    command:
+      - python
+      - -m
+      - modelops_glue.dq_check
+    args:
+      - --dataset-uri
+      - { inputValue: Dataset URI }
+      - --ruleset
+      - { inputValue: Ruleset }
+      - --fail-mode
+      - { inputValue: Fail mode }
+      - --report-out
+      - { outputPath: DQ report }
+      - --proceed-out
+      - { outputPath: Proceed }

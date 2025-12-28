@@ -1,0 +1,86 @@
+apiVersion: catalog.modelops.studio/v1
+kind: KfpTemplateCatalog
+metadata:
+  name: kfp-templates-v1
+  description: "Template-driven Kubeflow Pipelines catalog (Templates -> Runs)"
+defaults:
+  runtime: kfp-v2
+  artifactStore: s3|minio
+  registry: modelops-registry
+  computeProfiles:
+    cpu_small: { cpu: "2", memory: "4Gi" }
+    cpu_medium: { cpu: "4", memory: "8Gi" }
+    gpu_t4_timeslice: { gpu: "1", pool: "t4-timeslice" }
+    gpu_a30_mig: { gpu: "1", pool: "a30-mig" }
+
+templates:
+  - id: KFP-003
+    name: "Classic Train (Preprocess -> Train -> Eval -> Register)"
+    tags: [training, registry, baseline]
+    entrypoint: "pipelines/kfp/templates/KFP-003_classic_train/pipeline.py:classic_train_pipeline"
+    description: "Most common MLOps pattern with quality gate and model registration"
+    inputs:
+      - { name: dataset_uri, type: string, required: true }
+      - { name: label_col, type: string, required: true }
+      - { name: algorithm, type: string, default: xgboost }
+      - { name: acceptance_metric, type: string, default: rmse }
+      - { name: threshold, type: number, default: 0.8 }
+      - { name: compute_profile, type: string, default: cpu_medium }
+    outputs:
+      - { name: registry_version_id, type: string }
+
+  - id: KFP-005
+    name: "HPO (Tune -> Select Best -> Eval -> Register)"
+    tags: [training, hpo, registry]
+    entrypoint: "pipelines/kfp/templates/KFP-005_hpo/pipeline.py:hpo_pipeline"
+    description: "Hyperparameter tuning loop with best-trial selection and registration"
+    inputs:
+      - { name: dataset_uri, type: string, required: true }
+      - { name: objective_metric, type: string, default: auc }
+      - { name: max_trials, type: number, default: 12 }
+      - { name: parallel_trials, type: number, default: 3 }
+      - { name: compute_profile, type: string, default: cpu_medium }
+    outputs:
+      - { name: registry_version_id, type: string }
+
+  - id: KFP-006
+    name: "Data Quality Gate -> Conditional Train"
+    tags: [data, quality, gate]
+    entrypoint: "pipelines/kfp/templates/KFP-006_dq_gate/pipeline.py:dq_gated_train_pipeline"
+    description: "Block training if dataset fails validation rules or drift thresholds"
+    inputs:
+      - { name: dataset_uri, type: string, required: true }
+      - { name: dq_ruleset, type: string, default: default }
+      - { name: drift_baseline_uri, type: string, required: false }
+      - { name: fail_mode, type: string, default: stop } # stop|warn
+    outputs:
+      - { name: proceed, type: boolean }
+
+  - id: KFP-015
+    name: "Manual Approval Promotion (Staging -> Prod)"
+    tags: [deployment, approval, promotion]
+    entrypoint: "pipelines/kfp/templates/KFP-015_promotion/pipeline.py:promotion_pipeline"
+    description: "Deploy to staging, run smoke tests, require approval, then promote"
+    inputs:
+      - { name: model_version_id, type: string, required: true }
+      - { name: approval_ticket_id, type: string, required: true }
+      - { name: approval_timeout_seconds, type: number, default: 3600 }
+      - { name: traffic_shift, type: string, default: replace } # replace|canary
+    outputs:
+      - { name: prod_deployment_id, type: string }
+
+  - id: KFP-020
+    name: "OpenCost Chargeback (Allocation API -> Ledger -> Invoice Preview)"
+    tags: [finops, billing, opencost]
+    entrypoint: "pipelines/kfp/templates/KFP-020_opencost_chargeback/pipeline.py:chargeback_pipeline"
+    description: "Pull OpenCost allocation, map labels->tenant/project, write ledger, generate invoice preview"
+    inputs:
+      - { name: opencost_base_url, type: string, default: "http://opencost.opencost:9003" }
+      - { name: window, type: string, default: 7d }
+      - { name: aggregate, type: string, default: namespace }
+      - { name: resolution, type: string, default: 1m }
+      - { name: include_idle, type: boolean, default: false }
+      - { name: share_idle, type: boolean, default: true }
+      - { name: rate_card_id, type: string, default: default }
+    outputs:
+      - { name: invoice_preview_uri, type: string }

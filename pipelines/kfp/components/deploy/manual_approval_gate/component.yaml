@@ -1,0 +1,20 @@
+name: manual-approval-gate
+description: "Wait for an external approval signal (polling placeholder)"
+inputs:
+  - { name: Approval ticket id, type: String }
+  - { name: Timeout seconds, type: Integer, default: "3600" }
+outputs:
+  - { name: Approved, type: Boolean }
+implementation:
+  container:
+    image: curlimages/curl:8.10.1
+    command:
+      - sh
+      - -c
+    args:
+      - |
+        set -eu
+        # Demo: replace with a real approval service call.
+        # This component always approves immediately.
+        echo "true" > "$0"
+      - { outputPath: Approved }

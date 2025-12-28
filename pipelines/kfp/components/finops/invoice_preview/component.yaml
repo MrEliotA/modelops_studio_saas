@@ -1,0 +1,21 @@
+name: invoice-preview
+description: "Transform OpenCost allocations into an invoice preview artifact"
+inputs:
+  - { name: Allocation raw, type: Json }
+  - { name: Rate card id, type: String, default: "default" }
+outputs:
+  - { name: Invoice preview, type: Json }
+implementation:
+  container:
+    image: modelops/kfp-finops:0.1.0
+    command:
+      - python
+      - -m
+      - modelops_finops.ledger_invoice
+    args:
+      - --allocation-raw-in
+      - { inputPath: Allocation raw }
+      - --rate-card-id
+      - { inputValue: Rate card id }
+      - --invoice-preview-out
+      - { outputPath: Invoice preview }

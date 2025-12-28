@@ -1,0 +1,27 @@
+name: train-tabular
+description: "Train a tabular model (demo placeholder)"
+inputs:
+  - { name: Dataset URI, type: String }
+  - { name: Label column, type: String }
+  - { name: Algorithm, type: String, default: "xgboost" }
+outputs:
+  - { name: Model artifact, type: Model }
+  - { name: Training metrics, type: Json }
+implementation:
+  container:
+    image: modelops/kfp-ml-cpu:0.1.0
+    command:
+      - python
+      - -m
+      - modelops_ml.train_tabular
+    args:
+      - --dataset-uri
+      - { inputValue: Dataset URI }
+      - --label-col
+      - { inputValue: Label column }
+      - --algorithm
+      - { inputValue: Algorithm }
+      - --model-out
+      - { outputPath: Model artifact }
+      - --metrics-out
+      - { outputPath: Training metrics }
