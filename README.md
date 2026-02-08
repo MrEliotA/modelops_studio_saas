@@ -16,8 +16,8 @@ This repo is a clean starting point for:
 
 ```mermaid
 graph TD
-  UI[Internal Panel / UI] -->|HTTPS| EDGE[API Gateway (Envoy Gateway) / Edge]
-  EDGE -->|tenant-aware routing| BFF[control-plane-api (BFF)]
+  UI[Internal Panel UI] -->|HTTPS| EDGE[API Gateway]
+  EDGE -->|tenant routing| BFF[control-plane-api BFF]
 
   BFF --> DB[(Postgres)]
   BFF --> NATS[(NATS JetStream)]
@@ -32,28 +32,24 @@ graph TD
   NATS --> TW
   NATS --> DW
 
-  %% Orchestration backend
   RO -->|PIPELINE_BACKEND=kfp| KFP[Kubeflow Pipelines API]
 
-  %% Serving
   DW --> KS[KServe]
   KS --> IS[InferenceService]
   IS --> GPU[GPU Nodes]
 
-  %% Registry
   BFF --> REG[registry-service]
-  REG --> OBJ[(S3-compatible Artifact Store)]
+  REG --> OBJ[(S3 Artifact Store)]
 
-  %% Templates
-  BFF --> TPL[template-service (catalog)]
-```
+  BFF --> TPL[template-service]
+
 
 ### Edge / Auth options
 
 - **Demo / kind**: either
   - Direct NodePort (30080) to control-plane-api + Host header (tenant-a.mlops.local)
   - Or via Envoy Gateway (port-forward to :30081) + Host header
-- **Production**: Envoy Gateway is the default edge entrypoint in this repo. Your internal panel can still handle AuthN/AuthZ and forward identity headers to the BFF.
+- **Production**: Envoy Gateway is the default edge entrypoint in this repo. main panel can still handle AuthN/AuthZ and forward identity headers to the BFF.
 
 ---
 
