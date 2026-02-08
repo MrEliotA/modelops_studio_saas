@@ -1,0 +1,17 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../base
+  - training-worker-scaledobject.yaml
+
+patchesStrategicMerge:
+  - training-worker-resources-patch.yaml
+
+  - gpu-dispatcher-t4-shared-patch.yaml
+  - gpu-dispatcher-t4-exclusive-patch.yaml
+  - gpu-dispatcher-mig-patch.yaml
+
+  # Secrets are environment-specific. Create `mlops-secrets` via your secret manager.
+  # See: deploy/k8s/mlops-saas/overlays/prod/env-secret.example.yaml
+  - env-configmap-patch.yaml

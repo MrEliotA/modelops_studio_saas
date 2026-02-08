@@ -1,0 +1,42 @@
+openapi: 3.0.3
+info:
+  title: deployment-service
+  version: 0.2.0
+  description: |
+    Deployment intent API. Backed by the `endpoints` table.
+
+paths:
+  /api/v1/deployments:
+    post:
+      summary: Create deployment (triggers async deploy)
+    get:
+      summary: List deployments
+      parameters:
+        - in: query
+          name: limit
+          schema: { type: integer, default: 50 }
+        - in: query
+          name: include_deleted
+          schema: { type: boolean, default: false }
+  /api/v1/deployments/{deployment_id}:
+    get:
+      summary: Get deployment
+      parameters:
+        - in: path
+          name: deployment_id
+          required: true
+          schema: { type: string, format: uuid }
+    put:
+      summary: Update deployment (may trigger redeploy)
+      parameters:
+        - in: path
+          name: deployment_id
+          required: true
+          schema: { type: string, format: uuid }
+    delete:
+      summary: Delete deployment
+      parameters:
+        - in: path
+          name: deployment_id
+          required: true
+          schema: { type: string, format: uuid }

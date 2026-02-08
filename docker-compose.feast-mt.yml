@@ -1,0 +1,44 @@
+services:
+  feast-redis:
+    image: redis:7-alpine
+    ports: ["6379:6379"]
+
+  feast-db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: feast
+      POSTGRES_PASSWORD: feast
+      POSTGRES_DB: feast
+    ports: ["5433:5432"]
+
+  feast-feature-server-tenant-a:
+    image: feastdev/feature-server:0.58.0
+    depends_on: [feast-redis, feast-db]
+    environment:
+      FEAST_PG_HOST: feast-db
+      FEAST_PG_PORT: "5432"
+      FEAST_PG_DATABASE: feast
+      FEAST_PG_SCHEMA: tenant_a
+      FEAST_PG_USER: feast
+      FEAST_PG_PASSWORD: feast
+      FEAST_REDIS_URL: feast-redis:6379
+    volumes:
+      - ./integrations/feast/tenants/tenant-a/feature_repo:/feature_repo:ro
+    command: ["sh","-c","psql postgresql://feast:feast@feast-db:5432/feast -c 'CREATE SCHEMA IF NOT EXISTS tenant_a;' && feast -c /feature_repo apply && feast serve -h 0.0.0.0 -p 6566 -c /feature_repo"]
+    ports: ["6566:6566"]
+
+  feast-feature-server-tenant-b:
+    image: feastdev/feature-server:0.58.0
+    depends_on: [feast-redis, feast-db]
+    environment:
+      FEAST_PG_HOST: feast-db
+      FEAST_PG_PORT: "5432"
+      FEAST_PG_DATABASE: feast
+      FEAST_PG_SCHEMA: tenant_b
+      FEAST_PG_USER: feast
+      FEAST_PG_PASSWORD: feast
+      FEAST_REDIS_URL: feast-redis:6379
+    volumes:
+      - ./integrations/feast/tenants/tenant-b/feature_repo:/feature_repo:ro
+    command: ["sh","-c","psql postgresql://feast:feast@feast-db:5432/feast -c 'CREATE SCHEMA IF NOT EXISTS tenant_b;' && feast -c /feature_repo apply && feast serve -h 0.0.0.0 -p 6566 -c /feature_repo"]
+    ports: ["6567:6566"]

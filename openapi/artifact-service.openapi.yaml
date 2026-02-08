@@ -1,0 +1,18 @@
+openapi: 3.0.3
+info:
+  title: artifact-service
+  version: 0.2.0
+paths:
+  /api/v1/artifacts:
+    post: { summary: Create artifact metadata record }
+    get:
+      summary: List artifact metadata records
+      parameters:
+        - in: query
+          name: limit
+          schema: { type: integer, default: 50 }
+        - in: query
+          name: kind
+          schema: { type: string }
+  /api/v1/artifacts/presign:
+    post: { summary: Generate presigned S3/MinIO URL }

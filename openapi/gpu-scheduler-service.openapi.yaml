@@ -1,0 +1,16 @@
+openapi: 3.0.3
+info:
+  title: gpu-scheduler-service
+  version: 1.07.0
+paths:
+  /api/v1/tenant-gpu-policies:
+    get:
+      summary: List tenant GPU policies
+  /api/v1/tenant-gpu-policies/{tenant_id}:
+    put:
+      summary: Upsert tenant GPU policy
+      parameters:
+        - in: path
+          name: tenant_id
+          required: true
+          schema: { type: string, format: uuid }

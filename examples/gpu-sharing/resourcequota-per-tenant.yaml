@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: gpu-quota
+spec:
+  hard:
+    nvidia.com/gpu: "2" # Max 2 GPU slices in this namespace/tenant

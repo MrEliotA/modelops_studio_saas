@@ -1,0 +1,95 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: gpu-operator
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://helm.ngc.nvidia.com/nvidia
+    chart: gpu-operator
+    targetRevision: v25.10.1
+    helm:
+      releaseName: gpu-operator
+      values: |-
+        # Production: NVIDIA GPU Operator + MIG (A100/A30) + T4 sharing profiles
+        driver:
+          enabled: true
+        toolkit:
+          enabled: true
+        dcgmExporter:
+          enabled: true
+
+        # Cluster-level default MIG strategy (node-level overrides are applied via labels).
+        mig:
+          strategy: mixed
+
+        migManager:
+          enabled: true
+          config:
+            name: custom-mig-parted-config
+            create: true
+            data:
+              config.yaml: |-
+                version: v1
+                mig-configs:
+                  all-disabled:
+                    - devices: all
+                      mig-enabled: false
+                  a100-40gb-all-1g.5gb:
+                    - devices: all
+                      mig-enabled: true
+                      mig-devices:
+                        "1g.5gb": 7
+
+        devicePlugin:
+          enabled: true
+          config:
+            name: device-plugin-config
+            create: true
+            default: default
+            data:
+              default: |-
+                version: v1
+                flags:
+                  migStrategy: none
+
+              # T4: CUDA time-slicing (oversubscription). No memory/fault isolation between replicas.
+              tesla-t4: |-
+                version: v1
+                flags:
+                  migStrategy: none
+                sharing:
+                  timeSlicing:
+                    renameByDefault: false
+                    failRequestsGreaterThanOne: true
+                    resources:
+                      - name: nvidia.com/gpu
+                        replicas: 8
+
+              # T4 (optional): CUDA MPS sharing (experimental). Not supported with MIG.
+              tesla-t4-mps: |-
+                version: v1
+                flags:
+                  migStrategy: none
+                sharing:
+                  mps:
+                    renameByDefault: false
+                    resources:
+                      - name: nvidia.com/gpu
+                        replicas: 8
+
+              # A100/A30: MIG (hard partitioning).
+              a100-mixed: |-
+                version: v1
+                flags:
+                  migStrategy: mixed
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: gpu-operator
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

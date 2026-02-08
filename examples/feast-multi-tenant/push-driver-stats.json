@@ -1,0 +1,21 @@
+{
+  "push_source_name": "driver_stats_push_source",
+  "df": {
+    "driver_id": [
+      1001
+    ],
+    "event_timestamp": [
+      "2025-01-01 00:00:00+00:00"
+    ],
+    "avg_daily_trips": [
+      120
+    ],
+    "conv_rate": [
+      1.1
+    ],
+    "acc_rate": [
+      0.98
+    ]
+  },
+  "to": "online"
+}

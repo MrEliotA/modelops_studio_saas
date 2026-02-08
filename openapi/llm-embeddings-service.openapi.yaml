@@ -1,0 +1,47 @@
+openapi: 3.0.3
+info:
+  title: llm-embeddings-service
+  version: 0.2.0
+paths:
+  /api/v1/embeddings:
+    post:
+      summary: Create embeddings for a list of inputs
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/EmbeddingsRequest' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EmbeddingsResponse' }
+components:
+  schemas:
+    EmbeddingsRequest:
+      type: object
+      properties:
+        inputs:
+          type: array
+          items: { type: string }
+        texts:
+          type: array
+          items: { type: string }
+        model:
+          type: string
+        dims:
+          type: integer
+          default: 1536
+    EmbeddingsResponse:
+      type: object
+      properties:
+        provider: { type: string }
+        model: { type: string }
+        dims: { type: integer }
+        count: { type: integer }
+        embeddings:
+          type: array
+          items:
+            type: array
+            items: { type: number, format: float }

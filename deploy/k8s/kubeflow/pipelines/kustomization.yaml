@@ -1,0 +1,11 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Kubeflow Pipelines install (GitOps friendly)
+# Ref: https://www.kubeflow.org/docs/components/pipelines/operator-guides/installation/
+# NOTE: We use the platform-agnostic config by default as a workaround for
+# common crash-loop issues in some clusters. Switch to env/dev if desired.
+
+resources:
+  - "github.com/kubeflow/pipelines/manifests/kustomize/cluster-scoped-resources?ref=2.15.0"
+  - "github.com/kubeflow/pipelines/manifests/kustomize/env/platform-agnostic?ref=2.15.0"

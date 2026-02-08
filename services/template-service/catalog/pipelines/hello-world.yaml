@@ -1,0 +1,42 @@
+# KFP v2 IR YAML (YAML-only template)
+pipelineInfo:
+  name: hello-world
+root:
+  dag:
+    tasks:
+      hello:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-hello
+        inputs:
+          parameters:
+            message:
+              componentInputParameter: message
+        taskInfo:
+          name: hello
+inputDefinitions:
+  parameters:
+    message:
+      parameterType: STRING
+components:
+  comp-hello:
+    executorLabel: exec-hello
+    inputDefinitions:
+      parameters:
+        message:
+          parameterType: STRING
+deploymentSpec:
+  executors:
+    exec-hello:
+      container:
+        image: docker.io/library/python:3.11-slim
+        command:
+          - sh
+          - -ec
+        args:
+          - |
+            echo "{{$.inputs.parameters['message']}}"
+            python -V
+schemaVersion: 2.1.0
+sdkVersion: kfp-2.15.0

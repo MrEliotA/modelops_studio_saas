@@ -1,0 +1,32 @@
+openapi: 3.0.3
+info:
+  title: template-service
+  version: 0.2.0
+paths:
+  /api/v1/templates:
+    post:
+      summary: Create template
+    get:
+      summary: List templates
+  /api/v1/templates/{template_id}:
+    get:
+      summary: Get template
+      parameters:
+        - in: path
+          name: template_id
+          required: true
+          schema: { type: string, format: uuid }
+    put:
+      summary: Update template
+      parameters:
+        - in: path
+          name: template_id
+          required: true
+          schema: { type: string, format: uuid }
+    delete:
+      summary: Delete template
+      parameters:
+        - in: path
+          name: template_id
+          required: true
+          schema: { type: string, format: uuid }

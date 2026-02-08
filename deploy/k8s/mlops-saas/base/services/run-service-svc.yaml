@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: run-service
+spec:
+  selector:
+    app: run-service
+  ports:
+    - name: http
+      port: 8000
+      targetPort: 8000

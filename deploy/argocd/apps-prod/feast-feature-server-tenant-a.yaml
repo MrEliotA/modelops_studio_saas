@@ -1,0 +1,43 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: feast-feature-server-tenant-a
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://feast-helm-charts.storage.googleapis.com
+    chart: feast-feature-server
+    targetRevision: 0.58.0
+    helm:
+      releaseName: feast-feature-server-tenant-a
+      values: |
+        feast_mode: online
+        feature_store_yaml_base64: "cHJvamVjdDogdGVuYW50X2EKcHJvdmlkZXI6IGxvY2FsCgpyZWdpc3RyeToKICByZWdpc3RyeV9zdG9yZV90eXBlOiBQb3N0Z3JlU1FMUmVnaXN0cnlTdG9yZQogIHBhdGg6IGZlYXN0X3JlZ2lzdHJ5CiAgaG9zdDogJHtGRUFTVF9QR19IT1NUfQogIHBvcnQ6ICR7RkVBU1RfUEdfUE9SVH0KICBkYXRhYmFzZTogJHtGRUFTVF9QR19EQVRBQkFTRX0KICBkYl9zY2hlbWE6ICR7RkVBU1RfUEdfU0NIRU1BfQogIHVzZXI6ICR7RkVBU1RfUEdfVVNFUn0KICBwYXNzd29yZDogJHtGRUFTVF9QR19QQVNTV09SRH0KCm9mZmxpbmVfc3RvcmU6CiAgdHlwZTogcG9zdGdyZXMKICBob3N0OiAke0ZFQVNUX1BHX0hPU1R9CiAgcG9ydDogJHtGRUFTVF9QR19QT1JUfQogIGRhdGFiYXNlOiAke0ZFQVNUX1BHX0RBVEFCQVNFfQogIGRiX3NjaGVtYTogJHtGRUFTVF9QR19TQ0hFTUF9CiAgdXNlcjogJHtGRUFTVF9QR19VU0VSfQogIHBhc3N3b3JkOiAke0ZFQVNUX1BHX1BBU1NXT1JEfQoKb25saW5lX3N0b3JlOgogIHR5cGU6IHJlZGlzCiAgY29ubmVjdGlvbl9zdHJpbmc6ICR7RkVBU1RfUkVESVNfVVJMfQoKZW50aXR5X2tleV9zZXJpYWxpemF0aW9uX3ZlcnNpb246IDIK"
+        env:
+          - name: FEAST_PG_HOST
+            value: feast-postgres-postgresql.feast.svc.cluster.local
+          - name: FEAST_PG_PORT
+            value: "5432"
+          - name: FEAST_PG_DATABASE
+            value: feast
+          - name: FEAST_PG_SCHEMA
+            value: tenant_a
+          - name: FEAST_PG_USER
+            value: feast
+          - name: FEAST_PG_PASSWORD
+            value: feast
+          - name: FEAST_REDIS_URL
+            value: feast-redis-master.feast.svc.cluster.local:6379
+        service:
+          type: ClusterIP
+          port: 6566
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: feast
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

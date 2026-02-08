@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mig-smoke
+  namespace: default
+spec:
+  restartPolicy: Never
+  # runtimeClassName: nvidia
+  containers:
+    - name: cuda-vectoradd
+      image: nvidia/samples:vectoradd-cuda11.2.1
+      resources:
+        limits:
+          # Example MIG slice. Adjust to the profile exposed by your nodes.
+          nvidia.com/mig-1g.5gb: "1"

@@ -1,0 +1,28 @@
+apiVersion: serving.kserve.io/v1beta1
+kind: InferenceService
+metadata:
+  name: triton-addsub
+  namespace: mlops-serving
+  annotations:
+    # Canary rollouts are revision-based and require Knative/serverless deployment mode.
+    serving.kserve.io/deploymentMode: Knative
+    serving.kserve.io/enable-prometheus-scraping: "true"
+spec:
+  predictor:
+    canaryTrafficPercent: 10
+    model:
+      modelFormat:
+        name: triton
+      protocolVersion: v2
+      runtimeVersion: 24.08-py3
+      # New model repo (e.g., v2) to roll out as canary.
+      storageUri: s3://mlops-artifacts/triton/add_sub_v2
+      resources:
+        requests:
+          cpu: "500m"
+          memory: "2Gi"
+          nvidia.com/gpu: 1
+        limits:
+          cpu: "2"
+          memory: "4Gi"
+          nvidia.com/gpu: 1

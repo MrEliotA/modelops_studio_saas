@@ -1,0 +1,29 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: mlops-system
+
+resources:
+- ../../base
+- env-secret.yaml
+- postgres.yaml
+- nats.yaml
+- minio.yaml
+- nats-bootstrap-job.yaml
+patchesStrategicMerge:
+- control-plane-nodeport-patch.yaml
+- gpu-dispatcher-t4-shared-patch.yaml
+- gpu-dispatcher-t4-exclusive-patch.yaml
+- env-configmap-patch.yaml
+
+# In kind demos we build and load images locally (mlops/*:dev).
+# These overrides prevent accidental pulls from remote registries.
+images:
+  - name: ghcr.io/yourorg/gpu-jobs-service
+    newName: mlops/gpu-jobs-service
+    newTag: dev
+  - name: ghcr.io/yourorg/gpu-scheduler-service
+    newName: mlops/gpu-scheduler-service
+    newTag: dev
+  - name: ghcr.io/yourorg/gpu-runner
+    newName: mlops/gpu-runner
+    newTag: dev

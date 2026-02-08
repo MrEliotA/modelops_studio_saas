@@ -1,0 +1,35 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: restrict-image-allowlist-tenants
+  annotations:
+    policies.kyverno.io/title: Restrict Image Registries (Tenants)
+    policies.kyverno.io/category: Supply Chain
+    policies.kyverno.io/subject: Pod
+    policies.kyverno.io/description: >
+      Blocks Pods in tenant namespaces from using images outside an allowlist.
+      This helps ensure workloads only run images from known registries/repositories.
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    - name: restrict-registries
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+              namespaceSelector:
+                matchLabels:
+                  mlops-saas.io/tenant: "true"
+      validate:
+        message: >
+          Image registry/repository is not in the allowlist for tenant workloads.
+        pattern:
+          spec:
+            containers:
+              - image: "ghcr.io/yourorg/* | docker.io/mlops/* | docker.io/library/* | docker.io/nvidia/* | nvcr.io/nvidia/* | docker.io/kserve/* | ghcr.io/kserve/*"
+            =(initContainers):
+              - image: "ghcr.io/yourorg/* | docker.io/mlops/* | docker.io/library/* | docker.io/nvidia/* | nvcr.io/nvidia/* | docker.io/kserve/* | ghcr.io/kserve/*"
+            =(ephemeralContainers):
+              - image: "ghcr.io/yourorg/* | docker.io/mlops/* | docker.io/library/* | docker.io/nvidia/* | nvcr.io/nvidia/* | docker.io/kserve/* | ghcr.io/kserve/*"

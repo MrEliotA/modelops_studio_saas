@@ -1,0 +1,7 @@
+tenants:
+  - name: tenant-a
+    tenant_id: 36de0af7-5038-4895-b048-8a83416b55b3
+    project_id: 76cfc3fa-901c-4edb-9096-9baa045d79ce
+  - name: tenant-b
+    tenant_id: f3999c96-8a26-48b7-b5b9-79d8b67b4c2e
+    project_id: 11e44d39-b558-4aef-866a-1552801e7be4

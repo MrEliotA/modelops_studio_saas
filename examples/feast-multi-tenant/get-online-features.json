@@ -1,0 +1,12 @@
+{
+  "features": [
+    "driver_stats_fv:avg_daily_trips",
+    "driver_stats_fv:conv_rate",
+    "driver_stats_fv:acc_rate"
+  ],
+  "entities": {
+    "driver_id": [
+      1001
+    ]
+  }
+}

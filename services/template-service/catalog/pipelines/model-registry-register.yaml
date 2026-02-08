@@ -1,0 +1,152 @@
+# KFP v2 IR YAML (YAML-only template)
+pipelineInfo:
+  name: model-registry-register
+root:
+  dag:
+    tasks:
+      register:
+        cachingOptions:
+          enableCache: false
+        componentRef:
+          name: comp-registry-register
+        inputs:
+          parameters:
+            registry_base_url:
+              componentInputParameter: registry_base_url
+            tenant_id:
+              componentInputParameter: tenant_id
+            project_id:
+              componentInputParameter: project_id
+            user_id:
+              componentInputParameter: user_id
+            model_name:
+              componentInputParameter: model_name
+            artifact_uri:
+              componentInputParameter: artifact_uri
+            stage:
+              componentInputParameter: stage
+            metrics_json:
+              componentInputParameter: metrics_json
+        taskInfo:
+          name: register
+inputDefinitions:
+  parameters:
+    registry_base_url:
+      parameterType: STRING
+    tenant_id:
+      parameterType: STRING
+    project_id:
+      parameterType: STRING
+    user_id:
+      parameterType: STRING
+    model_name:
+      parameterType: STRING
+    artifact_uri:
+      parameterType: STRING
+    stage:
+      parameterType: STRING
+    metrics_json:
+      parameterType: STRING
+components:
+  comp-registry-register:
+    executorLabel: exec-registry-register
+    inputDefinitions:
+      parameters:
+        registry_base_url:
+          parameterType: STRING
+        tenant_id:
+          parameterType: STRING
+        project_id:
+          parameterType: STRING
+        user_id:
+          parameterType: STRING
+        model_name:
+          parameterType: STRING
+        artifact_uri:
+          parameterType: STRING
+        stage:
+          parameterType: STRING
+        metrics_json:
+          parameterType: STRING
+deploymentSpec:
+  executors:
+    exec-registry-register:
+      container:
+        image: docker.io/library/python:3.11-slim
+        command:
+          - sh
+          - -ec
+        args:
+          - |
+            python - <<'PY'
+            import json
+            import urllib.request
+            import urllib.error
+
+            base = "{{$.inputs.parameters['registry_base_url']}}".rstrip('/')
+            tenant_id = "{{$.inputs.parameters['tenant_id']}}"
+            project_id = "{{$.inputs.parameters['project_id']}}"
+            user_id = "{{$.inputs.parameters['user_id']}}"
+            model_name = "{{$.inputs.parameters['model_name']}}"
+            artifact_uri = "{{$.inputs.parameters['artifact_uri']}}"
+            stage = "{{$.inputs.parameters['stage']}}"
+            metrics_json = "{{$.inputs.parameters['metrics_json']}}"
+
+            headers = {
+              'Content-Type': 'application/json',
+              'X-Tenant-Id': tenant_id,
+              'X-Project-Id': project_id,
+              'X-User-Id': user_id,
+            }
+
+            def req_json(method, url, payload=None):
+              data = None if payload is None else json.dumps(payload).encode('utf-8')
+              req = urllib.request.Request(url=url, data=data, headers=headers, method=method)
+              try:
+                with urllib.request.urlopen(req, timeout=15) as resp:
+                  raw = resp.read().decode('utf-8')
+                  return resp.status, (json.loads(raw) if raw else {})
+              except urllib.error.HTTPError as e:
+                raw = e.read().decode('utf-8')
+                try:
+                  body = json.loads(raw) if raw else {}
+                except Exception:
+                  body = {'raw': raw}
+                return e.code, body
+
+            # 1) Create model (idempotent-ish)
+            st, body = req_json('POST', f"{base}/api/v1/models", {'name': model_name})
+            if st == 201:
+              model_id = body['id']
+            elif st == 409:
+              # List and find the existing model by name
+              st2, body2 = req_json('GET', f"{base}/api/v1/models")
+              if st2 != 200:
+                raise SystemExit(f"failed_to_list_models status={st2} body={body2}")
+              items = body2.get('items') or []
+              match = [m for m in items if str(m.get('name','')).lower() == model_name.lower()]
+              if not match:
+                raise SystemExit(f"model_conflict_but_not_found name={model_name}")
+              model_id = match[0]['id']
+            else:
+              raise SystemExit(f"failed_to_create_model status={st} body={body}")
+
+            # 2) Create version
+            try:
+              metrics = json.loads(metrics_json) if metrics_json else {}
+            except Exception:
+              metrics = {}
+
+            payload = {
+              'artifact_uri': artifact_uri,
+              'metrics': metrics,
+              'stage': stage,
+            }
+            st3, body3 = req_json('POST', f"{base}/api/v1/models/{model_id}/versions", payload)
+            if st3 != 201:
+              raise SystemExit(f"failed_to_create_version status={st3} body={body3}")
+
+            print(json.dumps({'model_id': model_id, 'model_version_id': body3.get('id'), 'version': body3.get('version')}, indent=2))
+            PY
+schemaVersion: 2.1.0
+sdkVersion: kfp-2.15.0

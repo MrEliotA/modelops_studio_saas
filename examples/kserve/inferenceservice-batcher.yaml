@@ -1,0 +1,17 @@
+apiVersion: serving.kserve.io/v1beta1
+kind: InferenceService
+metadata:
+  name: torchserve-batcher
+  namespace: mlops-system
+spec:
+  predictor:
+    minReplicas: 1
+    timeout: 60
+    batcher:
+      maxBatchSize: 32
+      maxLatency: 500
+    model:
+      modelFormat:
+        name: pytorch
+      # Replace with your artifact store URI.
+      storageUri: s3://mlops-artifacts/models/torchserve/image_classifier/v1

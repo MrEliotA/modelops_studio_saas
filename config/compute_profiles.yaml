@@ -1,0 +1,7 @@
+profiles:
+  - name: t4-1x
+    kind: full-gpu
+    description: "T4 full GPU"
+  - name: a100-mig-1g5gb
+    kind: mig
+    description: "A100 MIG 1g.5gb"

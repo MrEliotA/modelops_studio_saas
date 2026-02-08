@@ -1,0 +1,18 @@
+openapi: 3.0.3
+info:
+  title: training-service
+  version: 0.2.0
+paths:
+  /api/v1/compute-profiles:
+    get: { summary: List compute profiles }
+  /api/v1/training-jobs:
+    post: { summary: Create training job }
+    get: { summary: List training jobs }
+  /api/v1/training-jobs/{job_id}:
+    get:
+      summary: Get training job
+      parameters:
+        - in: path
+          name: job_id
+          required: true
+          schema: { type: string }

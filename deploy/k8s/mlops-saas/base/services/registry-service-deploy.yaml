@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: registry-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: registry-service
+  template:
+    metadata:
+      labels:
+        app: registry-service
+    spec:
+      containers:
+      - name: main
+        image: mlops/registry-service:dev
+        imagePullPolicy: IfNotPresent
+        ports:
+          - containerPort: 8000
+        envFrom:
+          - configMapRef:
+              name: mlops-env
+          - secretRef:
+              name: mlops-secrets
+
+        readinessProbe:
+          httpGet:
+            path: /api/v1/healthz
+            port: 8000
+          initialDelaySeconds: 3
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /api/v1/healthz
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 20
+
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi

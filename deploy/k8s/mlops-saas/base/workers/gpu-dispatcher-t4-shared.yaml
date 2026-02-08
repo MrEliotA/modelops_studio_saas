@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gpu-dispatcher-t4-shared
+  namespace: mlops-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gpu-dispatcher-t4-shared
+  template:
+    metadata:
+      labels:
+        app: gpu-dispatcher-t4-shared
+    spec:
+      serviceAccountName: gpu-job-launcher
+      containers:
+        - name: dispatcher
+          image: ghcr.io/yourorg/gpu-runner:dev
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef: { name: mlops-env }
+            - secretRef: { name: mlops-secrets }
+          env:
+            - name: GPU_POOL
+              value: t4
+            - name: GPU_CLASS
+              value: shared
+            - name: GPU_EXECUTION_MODE
+              value: k8s_job
+            - name: GPU_EXECUTOR_IMAGE
+              value: ghcr.io/yourorg/gpu-runner:dev
+            - name: GPU_JOB_NAMESPACE
+              valueFrom: { fieldRef: { fieldPath: metadata.namespace } }
+            - name: GPU_NODE_SELECTOR_VALUE
+              value: tesla-t4
+            - name: GPU_RESOURCE_NAME
+              value: nvidia.com/gpu
+            - name: GPU_RESOURCE_COUNT
+              value: "1"
+            - name: NATS_DURABLE
+              value: gpu-dispatcher-t4-shared

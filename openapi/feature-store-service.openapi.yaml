@@ -1,0 +1,12 @@
+openapi: 3.0.3
+info:
+  title: feature-store-service
+  version: 0.1.0
+paths:
+  /api/v1/feast/get-online-features:
+    post: { summary: Get online features via the tenant Feature Server }
+  /api/v1/feast/push:
+    post: { summary: Push feature values via the tenant Feature Server }
+  /api/v1/admin/tenants/{tenant_id}:
+    put: { summary: Upsert tenant -> feast route }
+    get: { summary: Get tenant -> feast route }

@@ -1,0 +1,64 @@
+# KFP v2 IR YAML (YAML-only template)
+pipelineInfo:
+  name: smoke-healthcheck
+root:
+  dag:
+    tasks:
+      check:
+        cachingOptions:
+          enableCache: false
+        componentRef:
+          name: comp-smoke-health
+        inputs:
+          parameters:
+            base_urls_json:
+              componentInputParameter: base_urls_json
+        taskInfo:
+          name: check
+inputDefinitions:
+  parameters:
+    base_urls_json:
+      parameterType: STRING
+components:
+  comp-smoke-health:
+    executorLabel: exec-smoke-health
+    inputDefinitions:
+      parameters:
+        base_urls_json:
+          parameterType: STRING
+deploymentSpec:
+  executors:
+    exec-smoke-health:
+      container:
+        image: docker.io/library/python:3.11-slim
+        command:
+          - sh
+          - -ec
+        args:
+          - |
+            python - <<'PY'
+            import json
+            import urllib.request
+            import urllib.error
+
+            urls = json.loads("{{$.inputs.parameters['base_urls_json']}}")
+            if not isinstance(urls, list) or not urls:
+              raise SystemExit('base_urls_json must be a JSON array of URLs')
+
+            failed = []
+            for u in urls:
+              try:
+                req = urllib.request.Request(u, method='GET')
+                with urllib.request.urlopen(req, timeout=10) as resp:
+                  if resp.status >= 400:
+                    failed.append((u, resp.status))
+              except Exception as e:
+                failed.append((u, str(e)))
+
+            if failed:
+              raise SystemExit('healthcheck_failed: ' + json.dumps(failed))
+
+            print('ok')
+            PY
+schemaVersion: 2.1.0
+sdkVersion: kfp-2.15.0

@@ -1,0 +1,65 @@
+apiVersion: v1
+kind: List
+items:
+- apiVersion: gateway.networking.k8s.io/v1
+  kind: HTTPRoute
+  metadata:
+    name: tenant-tenant-a
+    namespace: gateway-system
+    labels:
+      app.kubernetes.io/name: mlops-gateway
+      mlops-saas.io/tenant: 'true'
+      mlops-saas.io/tenant-slug: tenant-a
+  spec:
+    parentRefs:
+    - name: mlops-gateway
+    hostnames:
+    - tenant-a.mlops.local
+    rules:
+    - matches:
+      - path:
+          type: PathPrefix
+          value: /
+      filters:
+      - type: RequestHeaderModifier
+        requestHeaderModifier:
+          set:
+          - name: X-Tenant-Id
+            value: 36de0af7-5038-4895-b048-8a83416b55b3
+          - name: X-Project-Id
+            value: 76cfc3fa-901c-4edb-9096-9baa045d79ce
+      backendRefs:
+      - name: control-plane-api
+        namespace: mlops-system
+        port: 8000
+- apiVersion: gateway.networking.k8s.io/v1
+  kind: HTTPRoute
+  metadata:
+    name: tenant-tenant-b
+    namespace: gateway-system
+    labels:
+      app.kubernetes.io/name: mlops-gateway
+      mlops-saas.io/tenant: 'true'
+      mlops-saas.io/tenant-slug: tenant-b
+  spec:
+    parentRefs:
+    - name: mlops-gateway
+    hostnames:
+    - tenant-b.mlops.local
+    rules:
+    - matches:
+      - path:
+          type: PathPrefix
+          value: /
+      filters:
+      - type: RequestHeaderModifier
+        requestHeaderModifier:
+          set:
+          - name: X-Tenant-Id
+            value: f3999c96-8a26-48b7-b5b9-79d8b67b4c2e
+          - name: X-Project-Id
+            value: 11e44d39-b558-4aef-866a-1552801e7be4
+      backendRefs:
+      - name: control-plane-api
+        namespace: mlops-system
+        port: 8000

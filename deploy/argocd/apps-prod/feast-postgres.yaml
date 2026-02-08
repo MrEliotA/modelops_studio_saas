@@ -1,0 +1,31 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: feast-postgres
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://charts.bitnami.com/bitnami
+    chart: postgresql
+    targetRevision: 15.5.20
+    helm:
+      releaseName: feast-postgres
+      values: |
+        auth:
+          username: feast
+          password: feast
+          database: feast
+        primary:
+          persistence:
+            enabled: true
+            size: 8Gi
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: feast
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

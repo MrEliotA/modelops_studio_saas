@@ -1,0 +1,56 @@
+#!/usr/bin/env yaml
+# Example: generate 1000 tenant namespaces with quotas/limits and baseline NetworkPolicies.
+#
+# Usage:
+#   python scripts/generate_tenant_manifests.py --input deploy/tenants/tenants.example-1000.yaml
+#
+# NOTE:
+# - IDs are deterministic (uuid5) so re-generating does not change tenant/project IDs.
+# - Tune quota/limits to your cluster sizing.
+
+generate:
+  count: 1000
+  name_prefix: tenant-
+  start_index: 1
+  index_width: 4
+  project_suffix: default
+
+defaults:
+  quota:
+    hard:
+      pods: "50"
+      requests.cpu: "16"
+      requests.memory: "64Gi"
+      limits.cpu: "32"
+      limits.memory: "128Gi"
+
+  limitRange:
+    container:
+      type: Container
+      min:
+        cpu: "50m"
+        memory: "64Mi"
+      max:
+        cpu: "16"
+        memory: "64Gi"
+      defaultRequest:
+        cpu: "250m"
+        memory: "256Mi"
+      default:
+        cpu: "1"
+        memory: "1Gi"
+
+  network:
+    # Only allow ingress from the API gateway namespace, and only into pods that opt-in.
+    allowIngressFromNamespaces:
+      - gateway-system
+    exposedPodLabels:
+      mlops-saas.io/expose: "true"
+    # Optional: restrict gateway->workload ports (example: HTTP 8000)
+    ingressPorts:
+      - protocol: TCP
+        port: 8000
+
+    # Allow tenant workloads to call platform APIs in mlops-system.
+    allowEgressToNamespaces:
+      - mlops-system

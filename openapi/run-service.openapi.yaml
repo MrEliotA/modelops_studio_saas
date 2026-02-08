@@ -1,0 +1,18 @@
+openapi: 3.0.3
+info:
+  title: run-service
+  version: 0.2.0
+paths:
+  /api/v1/runs:
+    post:
+      summary: Create a run from a template
+    get:
+      summary: List runs
+  /api/v1/runs/{run_id}:
+    get:
+      summary: Get run status
+      parameters:
+        - in: path
+          name: run_id
+          required: true
+          schema: { type: string }

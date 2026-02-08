@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: run-orchestrator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: run-orchestrator
+  template:
+    metadata:
+      labels:
+        app: run-orchestrator
+    spec:
+      containers:
+      - name: worker
+        image: mlops/run-orchestrator:dev
+        imagePullPolicy: IfNotPresent
+        envFrom:
+          - configMapRef:
+              name: mlops-env
+          - secretRef:
+              name: mlops-secrets
+
+
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 1Gi

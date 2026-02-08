@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: stream-feast-writer
+  namespace: mlops-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: stream-feast-writer }
+  template:
+    metadata:
+      labels: { app: stream-feast-writer }
+    spec:
+      containers:
+        - name: stream-feast-writer
+          image: mlops/stream-feast-writer:dev
+          env:
+            - name: NATS_URL
+              value: "nats://nats.mlops-system.svc.cluster.local:4222"
+            - name: FEATURE_STORE_SERVICE_URL
+              value: "http://feature-store-service.mlops-system.svc.cluster.local:8000"
+            - name: PUSH_SOURCE_NAME
+              value: "driver_stats_push_source"
+            - name: PUSH_TO
+              value: "online"

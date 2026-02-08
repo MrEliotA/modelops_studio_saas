@@ -1,0 +1,286 @@
+openapi: 3.0.3
+info:
+  title: registry-service
+  version: 0.3.0
+  description: |
+    Multi-tenant model registry + endpoint intent API.
+
+servers:
+  - url: http://localhost:8003
+
+components:
+  parameters:
+    XTenantId:
+      in: header
+      name: X-Tenant-Id
+      required: true
+      schema: { type: string, format: uuid }
+    XProjectId:
+      in: header
+      name: X-Project-Id
+      required: true
+      schema: { type: string, format: uuid }
+    XUserId:
+      in: header
+      name: X-User-Id
+      required: true
+      schema: { type: string }
+    IdempotencyKey:
+      in: header
+      name: Idempotency-Key
+      required: false
+      schema: { type: string, format: uuid }
+  schemas:
+    ApiError:
+      type: object
+      properties:
+        error: { type: string }
+        message: { type: string }
+        status_code: { type: integer }
+        request_id: { type: string }
+    ModelCreate:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string }
+        description: { type: string }
+    Model:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        description: { type: string }
+        created_by: { type: string }
+        created_at: { type: string }
+        updated_at: { type: string }
+    ModelVersionCreate:
+      type: object
+      required: [artifact_uri]
+      properties:
+        artifact_uri: { type: string }
+        source_run_id: { type: string }
+        metrics:
+          type: object
+          additionalProperties: true
+        stage: { type: string }
+    ModelVersion:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        model_id: { type: string, format: uuid }
+        version: { type: integer }
+        artifact_uri: { type: string }
+        source_run_id: { type: string }
+        metrics:
+          type: object
+          additionalProperties: true
+        stage: { type: string }
+        created_by: { type: string }
+        created_at: { type: string }
+        updated_at: { type: string }
+    EndpointCreate:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string }
+        runtime:
+          type: string
+          description: Serving runtime key (e.g., kserve, kserve-triton).
+          default: kserve
+        model_id: { type: string, format: uuid }
+        model_version_id: { type: string, format: uuid }
+        traffic:
+          type: object
+          additionalProperties: true
+          description: Traffic management options (e.g., canaryTrafficPercent).
+        autoscaling:
+          type: object
+          additionalProperties: true
+          description: Autoscaling hints (minReplicas/maxReplicas, keda, ...).
+        runtime_config:
+          type: object
+          additionalProperties: true
+          description: Extensible serving config passed to deploy-worker.
+    EndpointPatch:
+      type: object
+      additionalProperties: false
+      properties:
+        model_version_id: { type: string, format: uuid }
+        traffic:
+          type: object
+          additionalProperties: true
+        autoscaling:
+          type: object
+          additionalProperties: true
+        runtime: { type: string }
+        runtime_config:
+          type: object
+          additionalProperties: true
+    Endpoint:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        status: { type: string }
+        url: { type: string, nullable: true }
+        runtime: { type: string }
+        model_id: { type: string, format: uuid, nullable: true }
+        model_version_id: { type: string, format: uuid, nullable: true }
+        traffic:
+          type: object
+          additionalProperties: true
+        autoscaling:
+          type: object
+          additionalProperties: true
+        runtime_config:
+          type: object
+          additionalProperties: true
+        created_by: { type: string }
+        created_at: { type: string }
+        updated_at: { type: string }
+
+paths:
+  /api/v1/models:
+    post:
+      summary: Create model
+      parameters: [{$ref: '#/components/parameters/XTenantId'}, {$ref: '#/components/parameters/XProjectId'}, {$ref: '#/components/parameters/XUserId'}, {$ref: '#/components/parameters/IdempotencyKey'}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ModelCreate' }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Model' }
+        '400': { description: Bad request, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '409': { description: Conflict, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+    get:
+      summary: List models
+      parameters: [{$ref: '#/components/parameters/XTenantId'}, {$ref: '#/components/parameters/XProjectId'}, {$ref: '#/components/parameters/XUserId'}]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/Model' }
+  /api/v1/models/{model_id}:
+    get:
+      summary: Get model
+      parameters:
+        - {$ref: '#/components/parameters/XTenantId'}
+        - {$ref: '#/components/parameters/XProjectId'}
+        - {$ref: '#/components/parameters/XUserId'}
+        - in: path
+          name: model_id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Model' } } } }
+        '404': { description: Not found, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+  /api/v1/models/{model_id}/versions:
+    post:
+      summary: Create model version
+      parameters:
+        - {$ref: '#/components/parameters/XTenantId'}
+        - {$ref: '#/components/parameters/XProjectId'}
+        - {$ref: '#/components/parameters/XUserId'}
+        - {$ref: '#/components/parameters/IdempotencyKey'}
+        - in: path
+          name: model_id
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ModelVersionCreate' }
+      responses:
+        '201': { description: Created, content: { application/json: { schema: { $ref: '#/components/schemas/ModelVersion' } } } }
+    get:
+      summary: List model versions
+      parameters:
+        - {$ref: '#/components/parameters/XTenantId'}
+        - {$ref: '#/components/parameters/XProjectId'}
+        - {$ref: '#/components/parameters/XUserId'}
+        - in: path
+          name: model_id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/ModelVersion' }
+  /api/v1/endpoints:
+    post:
+      summary: Create endpoint
+      parameters: [{$ref: '#/components/parameters/XTenantId'}, {$ref: '#/components/parameters/XProjectId'}, {$ref: '#/components/parameters/XUserId'}, {$ref: '#/components/parameters/IdempotencyKey'}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/EndpointCreate' }
+      responses:
+        '201': { description: Created, content: { application/json: { schema: { $ref: '#/components/schemas/Endpoint' } } } }
+    get:
+      summary: List endpoints
+      parameters: [{$ref: '#/components/parameters/XTenantId'}, {$ref: '#/components/parameters/XProjectId'}, {$ref: '#/components/parameters/XUserId'}]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/Endpoint' }
+  /api/v1/endpoints/{endpoint_id}:
+    get:
+      summary: Get endpoint
+      parameters:
+        - {$ref: '#/components/parameters/XTenantId'}
+        - {$ref: '#/components/parameters/XProjectId'}
+        - {$ref: '#/components/parameters/XUserId'}
+        - in: path
+          name: endpoint_id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Endpoint' } } } }
+        '404': { description: Not found, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+    patch:
+      summary: Patch endpoint (trigger redeploy)
+      parameters:
+        - {$ref: '#/components/parameters/XTenantId'}
+        - {$ref: '#/components/parameters/XProjectId'}
+        - {$ref: '#/components/parameters/XUserId'}
+        - {$ref: '#/components/parameters/IdempotencyKey'}
+        - in: path
+          name: endpoint_id
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/EndpointPatch' }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Endpoint' } } } }
+        '400': { description: Bad request, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '404': { description: Not found, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }

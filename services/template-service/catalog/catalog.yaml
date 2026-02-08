@@ -1,0 +1,85 @@
+version: v2
+compiler: kfp-yaml
+templates:
+  - key: hello-world
+    name: Hello World
+    description: A minimal KFP pipeline that prints a message.
+    entrypoint: pipelines/hello-world.yaml
+    default_parameters:
+      message: "hello from mlops-saas"
+
+  - key: registry-register
+    name: Model registry register
+    description: Register a model + version in registry-service (YAML-only, no user builds).
+    entrypoint: pipelines/model-registry-register.yaml
+    default_parameters:
+      registry_base_url: "http://registry-service:8000"
+      model_name: "demo-model"
+      artifact_uri: "s3://mlops-artifacts/demo/demo-model/v1/"
+      stage: "Staging"
+      metrics_json: "{}"
+
+  - key: kserve-deploy-triton
+    name: KServe deploy (Triton)
+    description: Create a deployment intent that deploy-worker reconciles into a KServe InferenceService (Triton).
+    entrypoint: pipelines/kserve-deploy-triton.yaml
+    default_parameters:
+      deployment_base_url: "http://deployment-service:8000"
+      deployment_name: "demo-endpoint"
+      runtime: "kserve-triton"
+      model_version_id: ""
+      canary_percent: -1
+      gpu: false
+
+  - key: rollout-traffic-split
+    name: Rollout traffic split (canary / A-B / blue-green)
+    description: Update an existing deployment traffic split via canaryTrafficPercent.
+    entrypoint: pipelines/rollout-traffic-split.yaml
+    default_parameters:
+      deployment_base_url: "http://deployment-service:8000"
+      deployment_id: ""
+      model_version_id: ""
+      canary_percent: 10
+
+  - key: rollout-canary
+    name: Canary rollout (KServe)
+    description: Update an existing deployment with canaryTrafficPercent (0-100) and optionally a new model_version_id.
+    entrypoint: pipelines/rollout-canary.yaml
+    default_parameters:
+      deployment_base_url: "http://deployment-service:8000"
+      deployment_id: ""
+      model_version_id: ""
+      canary_percent: 10
+
+  - key: rollout-ab
+    name: A/B rollout 50/50 (KServe)
+    description: Split traffic 50/50 between last-good and new revision (sets canaryTrafficPercent=50). Requires model_version_id.
+    entrypoint: pipelines/rollout-ab.yaml
+    default_parameters:
+      deployment_base_url: "http://deployment-service:8000"
+      deployment_id: ""
+      model_version_id: ""
+
+  - key: rollout-blue-green-stage
+    name: Blue/Green stage (0% traffic)
+    description: Deploy green revision with 0% traffic (sets canaryTrafficPercent=0). Requires model_version_id.
+    entrypoint: pipelines/rollout-blue-green-stage.yaml
+    default_parameters:
+      deployment_base_url: "http://deployment-service:8000"
+      deployment_id: ""
+      model_version_id: ""
+
+  - key: rollout-blue-green-promote
+    name: Blue/Green promote (100% traffic)
+    description: Promote the staged green revision by clearing canaryTrafficPercent (sets traffic={} on deployment intent).
+    entrypoint: pipelines/rollout-blue-green-promote.yaml
+    default_parameters:
+      deployment_base_url: "http://deployment-service:8000"
+      deployment_id: ""
+
+  - key: smoke-healthcheck
+    name: Smoke healthcheck
+    description: Simple pipeline that hits platform health endpoints and fails fast.
+    entrypoint: pipelines/smoke-healthcheck.yaml
+    default_parameters:
+      base_urls_json: "[\"http://template-service:8000/api/v1/healthz\",\"http://deployment-service:8000/api/v1/healthz\",\"http://registry-service:8000/api/v1/healthz\"]"

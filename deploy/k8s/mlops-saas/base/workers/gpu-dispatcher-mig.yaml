@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gpu-dispatcher-mig
+  namespace: mlops-system
+spec:
+  replicas: 0
+  selector:
+    matchLabels:
+      app: gpu-dispatcher-mig
+  template:
+    metadata:
+      labels:
+        app: gpu-dispatcher-mig
+    spec:
+      serviceAccountName: gpu-job-launcher
+      containers:
+        - name: dispatcher
+          image: ghcr.io/yourorg/gpu-runner:dev
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef: { name: mlops-env }
+            - secretRef: { name: mlops-secrets }
+          env:
+            - name: GPU_POOL
+              value: mig
+            - name: GPU_EXECUTION_MODE
+              value: k8s_job
+            - name: GPU_EXECUTOR_IMAGE
+              value: ghcr.io/yourorg/gpu-runner:dev
+            - name: GPU_JOB_NAMESPACE
+              valueFrom: { fieldRef: { fieldPath: metadata.namespace } }
+            # NOTE: Configure the MIG resource name that matches your partition profile.
+            - name: GPU_RESOURCE_NAME
+              value: nvidia.com/mig-1g.5gb
+            - name: GPU_RESOURCE_COUNT
+              value: "1"
+            - name: GPU_NODE_SELECTOR_VALUE
+              value: a100-mixed
+            - name: NATS_DURABLE
+              value: gpu-dispatcher-mig

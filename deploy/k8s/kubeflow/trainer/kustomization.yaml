@@ -1,0 +1,9 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Kubeflow Trainer install (GitOps friendly)
+# Ref: https://www.kubeflow.org/docs/components/trainer/operator-guides/installation/
+
+resources:
+  - "github.com/kubeflow/trainer/manifests/overlays/manager?ref=v2.1.0"
+  - "github.com/kubeflow/trainer/manifests/overlays/runtimes?ref=v2.1.0"

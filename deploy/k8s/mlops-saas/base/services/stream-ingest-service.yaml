@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: stream-ingest-service
+  namespace: mlops-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: stream-ingest-service }
+  template:
+    metadata:
+      labels: { app: stream-ingest-service }
+    spec:
+      containers:
+        - name: stream-ingest-service
+          image: mlops/stream-ingest-service:dev
+          ports: [{ containerPort: 8000 }]
+          env:
+            - name: NATS_URL
+              value: "nats://nats.mlops-system.svc.cluster.local:4222"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: stream-ingest-service
+  namespace: mlops-system
+spec:
+  selector: { app: stream-ingest-service }
+  ports:
+    - name: http
+      port: 8000
+      targetPort: 8000

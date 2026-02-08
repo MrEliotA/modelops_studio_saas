@@ -1,0 +1,27 @@
+project: tenant_a
+provider: local
+
+registry:
+  registry_store_type: PostgreSQLRegistryStore
+  path: feast_registry
+  host: ${FEAST_PG_HOST}
+  port: ${FEAST_PG_PORT}
+  database: ${FEAST_PG_DATABASE}
+  db_schema: ${FEAST_PG_SCHEMA}
+  user: ${FEAST_PG_USER}
+  password: ${FEAST_PG_PASSWORD}
+
+offline_store:
+  type: postgres
+  host: ${FEAST_PG_HOST}
+  port: ${FEAST_PG_PORT}
+  database: ${FEAST_PG_DATABASE}
+  db_schema: ${FEAST_PG_SCHEMA}
+  user: ${FEAST_PG_USER}
+  password: ${FEAST_PG_PASSWORD}
+
+online_store:
+  type: redis
+  connection_string: ${FEAST_REDIS_URL}
+
+entity_key_serialization_version: 2

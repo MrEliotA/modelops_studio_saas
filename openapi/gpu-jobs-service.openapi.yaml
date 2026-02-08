@@ -1,0 +1,25 @@
+openapi: 3.0.3
+info:
+  title: gpu-jobs-service
+  version: 1.07.0
+paths:
+  /api/v1/gpu-jobs:
+    post:
+      summary: Create GPU job (queued)
+      description: |
+        Creates a queued GPU job and publishes an enqueue event for the scheduler.
+
+        Fields:
+        - gpu_pool_requested: t4|mig|auto
+        - isolation_level: shared|exclusive  (alias: isolated -> exclusive)
+        - priority: integer
+    get:
+      summary: List GPU jobs
+  /api/v1/gpu-jobs/{job_id}:
+    get:
+      summary: Get GPU job
+      parameters:
+        - in: path
+          name: job_id
+          required: true
+          schema: { type: string }

@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mlops-common"
+version = "0.2.0"
+description = "Shared concerns for MLOps SaaS (tenancy, idempotency, logging, tracing, events)"
+requires-python = ">=3.10"
+dependencies = [
+  "fastapi>=0.110",
+  "starlette>=0.37",
+  "asyncpg>=0.29",
+  "structlog>=25.0",
+  "httpx>=0.27",
+  "opentelemetry-api>=1.25",
+  "opentelemetry-sdk>=1.25",
+  "opentelemetry-exporter-otlp>=1.25",
+  "opentelemetry-instrumentation-fastapi>=0.46b0",
+  "opentelemetry-instrumentation-httpx>=0.46b0",
+  "nats-py>=2.9.0",
+]

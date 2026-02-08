@@ -1,0 +1,17 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: mlops-gateway
+  namespace: gateway-system
+  labels:
+    app.kubernetes.io/name: mlops-gateway
+spec:
+  gatewayClassName: envoy-gateway
+  listeners:
+    - name: http
+      protocol: HTTP
+      port: 80
+      hostname: "*.mlops.local"
+      allowedRoutes:
+        namespaces:
+          from: Same

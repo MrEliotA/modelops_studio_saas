@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mlops-env
+data:
+  # Keep deploy-worker dependency-free in demo clusters.
+  DEPLOY_MODE: simulate
+
+  # Kind demo hostnames in deploy/kind/README.md
+  TENANT_BASE_DOMAIN: "mlops.local,127.0.0.1.nip.io"

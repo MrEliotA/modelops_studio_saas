@@ -1,0 +1,36 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mlops-env
+data:
+  NATS_URL: nats://nats:4222
+
+  # Object storage (dev defaults)
+  MINIO_ENDPOINT: http://minio:9000
+  S3_REGION: us-east-1
+
+  # Observability
+  OTEL_ENABLED: "false"
+
+  # Tenant routing (control-plane only)
+  # If set, control-plane extracts tenant slug from subdomain: <tenant>.<TENANT_BASE_DOMAIN>
+  # Example: tenant-a.mlops.example.com -> tenant-a (when TENANT_BASE_DOMAIN=mlops.example.com)
+  TENANT_BASE_DOMAIN: ""
+
+  # Orchestration backends
+  # - local: in-repo simulated orchestrator (MVP)
+  # - kfp: submit + track runs via Kubeflow Pipelines API
+  PIPELINE_BACKEND: local
+
+  # Kubeflow Pipelines API endpoint (only used when PIPELINE_BACKEND=kfp)
+  # In-cluster default for standalone KFP:
+  #   http://ml-pipeline.kubeflow:8888
+  KFP_HOST: ""
+  KFP_NAMESPACE: kubeflow
+  KFP_POLL_INTERVAL_SECONDS: "10"
+
+  # Template Service (YAML-only pipeline packages)
+  TEMPLATE_SERVICE_BASE_URL: http://template-service:8000
+  TEMPLATE_SERVICE_TIMEOUT_SECONDS: "10"
+  SYSTEM_USER_ID: system:run-orchestrator
+  SYSTEM_ROLES: system

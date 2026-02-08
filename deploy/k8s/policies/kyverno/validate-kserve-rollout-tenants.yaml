@@ -1,0 +1,90 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: validate-kserve-rollout-tenants
+  annotations:
+    policies.kyverno.io/title: Validate KServe rollout settings (Tenants)
+    policies.kyverno.io/category: Model Serving
+    policies.kyverno.io/subject: InferenceService
+    policies.kyverno.io/description: >
+      Guardrails for KServe rollout usage in tenant namespaces.
+      Ensures canaryTrafficPercent is within 0-100, canary rollouts use Knative deployment mode,
+      and Triton deployments use protocolVersion=v2.
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    - name: canary-percent-range
+      match:
+        any:
+          - resources:
+              kinds:
+                - serving.kserve.io/v1beta1/InferenceService
+                - serving.kserve.io/v1/InferenceService
+              namespaceSelector:
+                matchLabels:
+                  mlops-saas.io/tenant: "true"
+      preconditions:
+        all:
+          - key: "{{ request.object.spec.predictor.canaryTrafficPercent || '' }}"
+            operator: NotEquals
+            value: ""
+      validate:
+        message: "spec.predictor.canaryTrafficPercent must be between 0 and 100."
+        deny:
+          conditions:
+            any:
+              - key: "{{ request.object.spec.predictor.canaryTrafficPercent }}"
+                operator: GreaterThan
+                value: 100
+              - key: "{{ request.object.spec.predictor.canaryTrafficPercent }}"
+                operator: LessThan
+                value: 0
+
+    - name: canary-requires-knative
+      match:
+        any:
+          - resources:
+              kinds:
+                - serving.kserve.io/v1beta1/InferenceService
+                - serving.kserve.io/v1/InferenceService
+              namespaceSelector:
+                matchLabels:
+                  mlops-saas.io/tenant: "true"
+      preconditions:
+        all:
+          - key: "{{ request.object.spec.predictor.canaryTrafficPercent || '' }}"
+            operator: NotEquals
+            value: ""
+      validate:
+        message: "canary rollouts require serverless (Knative) deployment mode: set metadata.annotations['serving.kserve.io/deploymentMode']=Knative."
+        deny:
+          conditions:
+            any:
+              - key: "{{ request.object.metadata.annotations.'serving.kserve.io/deploymentMode' || '' }}"
+                operator: NotEquals
+                value: "Knative"
+
+    - name: triton-requires-protocol-v2
+      match:
+        any:
+          - resources:
+              kinds:
+                - serving.kserve.io/v1beta1/InferenceService
+                - serving.kserve.io/v1/InferenceService
+              namespaceSelector:
+                matchLabels:
+                  mlops-saas.io/tenant: "true"
+      preconditions:
+        all:
+          - key: "{{ request.object.spec.predictor.model.modelFormat.name || '' }}"
+            operator: Equals
+            value: "triton"
+      validate:
+        message: "Triton predictor must use KServe protocolVersion=v2."
+        deny:
+          conditions:
+            any:
+              - key: "{{ request.object.spec.predictor.model.protocolVersion || '' }}"
+                operator: NotEquals
+                value: "v2"

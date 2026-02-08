@@ -1,0 +1,10 @@
+openapi: 3.0.3
+info:
+  title: metering-service
+  version: 0.2.0
+paths:
+  /api/v1/usage:
+    post: { summary: Ingest usage record }
+    get: { summary: List usage records }
+  /api/v1/invoices:
+    post: { summary: Generate invoice for a period }

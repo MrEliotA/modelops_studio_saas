@@ -1,0 +1,358 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: mlops
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./migrations:/migrations:ro
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - miniodata:/data
+
+  nats:
+    image: nats:2.12-alpine
+    command: ["-js", "-m", "8222"]
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+
+  nats-bootstrap:
+    build:
+      context: .
+      dockerfile: deploy/nats-bootstrap/Dockerfile
+    depends_on: [nats]
+    environment:
+      NATS_URL: nats://nats:4222
+
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:latest
+    depends_on: [postgres, minio]
+    environment:
+      MLFLOW_S3_ENDPOINT_URL: http://minio:9000
+      AWS_ACCESS_KEY_ID: minioadmin
+      AWS_SECRET_ACCESS_KEY: minioadmin
+    command: >
+      mlflow server
+      --host 0.0.0.0
+      --port 5000
+      --backend-store-uri postgresql://postgres:postgres@postgres:5432/mlops
+      --default-artifact-root s3://mlflow/
+    ports:
+      - "5000:5000"
+
+  # Optional (dev): central collector if you enable OTEL_ENABLED=true per service.
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    command: ["--config=/etc/otelcol/config.yaml"]
+    volumes:
+      - ./deploy/otel-collector/config.yaml:/etc/otelcol/config.yaml:ro
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+      - "8888:8888"
+
+  control-plane-api:
+    build:
+      context: .
+      dockerfile: services/control-plane-api/Dockerfile
+    depends_on: [postgres]
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/mlops
+      OTEL_ENABLED: "false"
+    ports:
+      - "8080:8000"
+
+  template-service:
+    build:
+      context: .
+      dockerfile: services/template-service/Dockerfile
+    depends_on: [postgres, nats]
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/mlops
+      NATS_URL: nats://nats:4222
+      OTEL_ENABLED: "false"
+    ports:
+      - "8001:8000"
+
+  run-service:
+    build:
+      context: .
+      dockerfile: services/run-service/Dockerfile
+    depends_on: [postgres, nats]
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/mlops
+      NATS_URL: nats://nats:4222
+      OTEL_ENABLED: "false"
+    ports:
+      - "8002:8000"
+
+  training-service:
+    build:
+      context: .
+      dockerfile: services/training-service/Dockerfile
+    depends_on: [postgres, nats]
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/mlops
+      NATS_URL: nats://nats:4222
+      COMPUTE_PROFILES_PATH: /app/config/compute_profiles.yaml
+      OTEL_ENABLED: "false"
+    ports:
+      - "8006:8000"
+
+  registry-service:
+    build:
+      context: .
+      dockerfile: services/registry-service/Dockerfile
+    depends_on: [postgres, nats, mlflow]
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/mlops
+      NATS_URL: nats://nats:4222
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+      OTEL_ENABLED: "false"
+    ports:
+      - "8003:8000"
+
+  artifact-service:
+    build:
+      context: .
+      dockerfile: services/artifact-service/Dockerfile
+    depends_on: [postgres, minio]
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/mlops
+      MINIO_ENDPOINT: http://minio:9000
+      AWS_ACCESS_KEY_ID: minioadmin
+      AWS_SECRET_ACCESS_KEY: minioadmin
+      S3_REGION: us-east-1
+      OTEL_ENABLED: "false"
+    ports:
+      - "8004:8000"
+
+  deployment-service:
+    build:
+      context: .
+      dockerfile: services/deployment-service/Dockerfile
+    depends_on: [postgres, nats]
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/mlops
+      NATS_URL: nats://nats:4222
+      OTEL_ENABLED: "false"
+    ports:
+      - "8007:8000"
+
+  serving-service:
+    build:
+      context: .
+      dockerfile: services/serving-service/Dockerfile
+    depends_on: [postgres, nats]
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/mlops
+      NATS_URL: nats://nats:4222
+      OTEL_ENABLED: "false"
+    ports:
+      - "8008:8000"
+
+  metering-service:
+    build:
+      context: .
+      dockerfile: services/metering-service/Dockerfile
+    depends_on: [postgres, nats]
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/mlops
+      NATS_URL: nats://nats:4222
+      OTEL_ENABLED: "false"
+    ports:
+      - "8005:8000"
+
+  llm-embeddings-service:
+    build:
+      context: .
+      dockerfile: services/llm-embeddings-service/Dockerfile
+    depends_on: [postgres]
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/mlops
+      OTEL_ENABLED: "false"
+      EMBEDDINGS_PROVIDER: "hash"
+      EMBEDDINGS_DIM: "1536"
+    ports:
+      - "8010:8000"
+
+  llm-rag-service:
+    build:
+      context: .
+      dockerfile: services/llm-rag-service/Dockerfile
+    depends_on: [postgres, minio, llm-embeddings-service]
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/mlops
+      MINIO_ENDPOINT: http://minio:9000
+      AWS_ACCESS_KEY_ID: minioadmin
+      AWS_SECRET_ACCESS_KEY: minioadmin
+      EMBEDDINGS_URL: http://llm-embeddings-service:8000/api/v1/embeddings
+      RAG_EMBEDDING_MODEL: local-hash-v1
+      OTEL_ENABLED: "false"
+    ports:
+      - "8011:8000"
+
+  llm-eval-service:
+    build:
+      context: .
+      dockerfile: services/llm-eval-service/Dockerfile
+    depends_on: [postgres]
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/mlops
+      OTEL_ENABLED: "false"
+    ports:
+      - "8014:8000"
+
+  llm-labeling-service:
+    build:
+      context: .
+      dockerfile: services/llm-labeling-service/Dockerfile
+    depends_on: [postgres]
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/mlops
+      OTEL_ENABLED: "false"
+    ports:
+      - "8015:8000"
+
+  feature-store-service:
+    build:
+      context: .
+      dockerfile: services/feature-store-service/Dockerfile
+    depends_on: [postgres]
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/mlops
+      OTEL_ENABLED: "false"
+    ports:
+      - "8012:8000"
+
+  stream-ingest-service:
+    build:
+      context: .
+      dockerfile: services/stream-ingest-service/Dockerfile
+    depends_on: [postgres, nats]
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/mlops
+      NATS_URL: nats://nats:4222
+      OTEL_ENABLED: "false"
+    ports:
+      - "8013:8000"
+
+  stream-feast-writer:
+    build:
+      context: .
+      dockerfile: workers/stream-feast-writer/Dockerfile
+    depends_on: [nats, feature-store-service]
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/mlops
+      NATS_URL: nats://nats:4222
+      FEATURE_STORE_SERVICE_URL: http://feature-store-service:8000
+      PUSH_SOURCE_NAME: driver_stats_push_source
+      PUSH_TO: online
+
+  run-orchestrator:
+    build:
+      context: .
+      dockerfile: workers/run-orchestrator/Dockerfile
+    depends_on: [postgres, nats]
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/mlops
+      NATS_URL: nats://nats:4222
+
+  training-worker:
+    build:
+      context: .
+      dockerfile: workers/training-worker/Dockerfile
+    depends_on: [postgres, nats, mlflow]
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/mlops
+      NATS_URL: nats://nats:4222
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+
+  deploy-worker:
+    build:
+      context: .
+      dockerfile: workers/deploy-worker/Dockerfile
+    depends_on: [postgres, nats]
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/mlops
+      NATS_URL: nats://nats:4222
+
+  metering-worker:
+    build:
+      context: .
+      dockerfile: workers/metering-worker/Dockerfile
+    depends_on: [postgres, nats]
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/mlops
+      NATS_URL: nats://nats:4222
+
+  gpu-jobs-service:
+    build:
+      context: .
+      dockerfile: services/gpu-jobs-service/Dockerfile
+    depends_on: [postgres, nats]
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/mlops
+      NATS_URL: nats://nats:4222
+      OTEL_ENABLED: "false"
+    ports:
+      - "8020:8000"
+
+  gpu-scheduler-service:
+    build:
+      context: .
+      dockerfile: services/gpu-scheduler-service/Dockerfile
+    depends_on: [postgres, nats]
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/mlops
+      NATS_URL: nats://nats:4222
+      OTEL_ENABLED: "false"
+    ports:
+      - "8021:8000"
+
+
+  gpu-dispatcher-t4-shared:
+    build:
+      context: .
+      dockerfile: workers/gpu-runner/Dockerfile
+    depends_on: [postgres, nats, gpu-scheduler-service]
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/mlops
+      NATS_URL: nats://nats:4222
+      GPU_POOL: t4
+      GPU_CLASS: shared
+      GPU_EXECUTION_MODE: direct
+      GPU_EXECUTOR: simulate
+      NATS_DURABLE: gpu-dispatcher-t4-shared
+
+  gpu-dispatcher-t4-exclusive:
+    build:
+      context: .
+      dockerfile: workers/gpu-runner/Dockerfile
+    depends_on: [postgres, nats, gpu-scheduler-service]
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/mlops
+      NATS_URL: nats://nats:4222
+      GPU_POOL: t4
+      GPU_CLASS: exclusive
+      GPU_EXECUTION_MODE: direct
+      GPU_EXECUTOR: simulate
+      NATS_DURABLE: gpu-dispatcher-t4-exclusive
+
+volumes:
+  pgdata:
+  miniodata:

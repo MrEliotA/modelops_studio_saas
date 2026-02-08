@@ -1,0 +1,20 @@
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: training-worker-jetstream
+  namespace: mlops-system
+spec:
+  scaleTargetRef:
+    name: training-worker
+  minReplicaCount: 1
+  maxReplicaCount: 10
+  cooldownPeriod: 30
+  triggers:
+    - type: nats-jetstream
+      metadata:
+        natsServerMonitoringEndpoint: "nats:8222"
+        account: "$G"
+        stream: "MLOPS_TRAINING"
+        consumer: "training-worker"
+        subject: "mlops.training.requested"
+        lagThreshold: "5"

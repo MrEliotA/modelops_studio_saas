@@ -1,0 +1,107 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: feast-feature-repo-tenant-b
+  namespace: feast
+data:
+  feature_store.yaml: |
+    project: tenant_b
+    provider: local
+    
+    registry:
+      registry_store_type: PostgreSQLRegistryStore
+      path: feast_registry
+      host: ${FEAST_PG_HOST}
+      port: ${FEAST_PG_PORT}
+      database: ${FEAST_PG_DATABASE}
+      db_schema: ${FEAST_PG_SCHEMA}
+      user: ${FEAST_PG_USER}
+      password: ${FEAST_PG_PASSWORD}
+    
+    offline_store:
+      type: postgres
+      host: ${FEAST_PG_HOST}
+      port: ${FEAST_PG_PORT}
+      database: ${FEAST_PG_DATABASE}
+      db_schema: ${FEAST_PG_SCHEMA}
+      user: ${FEAST_PG_USER}
+      password: ${FEAST_PG_PASSWORD}
+    
+    online_store:
+      type: redis
+      connection_string: ${FEAST_REDIS_URL}
+    
+    entity_key_serialization_version: 2
+  features.py: |
+    from datetime import timedelta
+    from feast import Entity, FeatureView, Field
+    from feast.data_source import PushSource
+    from feast.types import Float32, Int64
+    from feast.value_type import ValueType
+    
+    driver = Entity(
+        name="driver",
+        join_keys=["driver_id"],
+        value_type=ValueType.INT64,
+        description="Driver entity",
+    )
+    
+    driver_stats_push_source = PushSource(
+        name="driver_stats_push_source",
+    )
+    
+    driver_stats_fv = FeatureView(
+        name="driver_stats_fv",
+        entities=[driver],
+        ttl=timedelta(days=1),
+        schema=[
+            Field(name="avg_daily_trips", dtype=Int64),
+            Field(name="conv_rate", dtype=Float32),
+            Field(name="acc_rate", dtype=Float32),
+        ],
+        online=True,
+        source=driver_stats_push_source,
+    )
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: feast-apply-tenant-b
+  namespace: feast
+spec:
+  backoffLimit: 3
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: feast-apply
+          image: feastdev/feature-server:0.58.0
+          command: ["sh","-c"]
+          args:
+            - >
+              mkdir -p /repo &&
+              cp /cm/feature_store.yaml /repo/feature_store.yaml &&
+              cp /cm/features.py /repo/features.py &&
+              feast -c /repo apply
+          env:
+            - name: FEAST_PG_HOST
+              valueFrom: { secretKeyRef: { name: feast-postgres, key: host } }
+            - name: FEAST_PG_PORT
+              valueFrom: { secretKeyRef: { name: feast-postgres, key: port } }
+            - name: FEAST_PG_DATABASE
+              valueFrom: { secretKeyRef: { name: feast-postgres, key: database } }
+            - name: FEAST_PG_SCHEMA
+              value: "tenant_b"
+            - name: FEAST_PG_USER
+              valueFrom: { secretKeyRef: { name: feast-postgres, key: user } }
+            - name: FEAST_PG_PASSWORD
+              valueFrom: { secretKeyRef: { name: feast-postgres, key: password } }
+            - name: FEAST_REDIS_URL
+              valueFrom: { secretKeyRef: { name: feast-redis, key: url } }
+          volumeMounts:
+            - name: cm
+              mountPath: /cm
+      volumes:
+        - name: cm
+          configMap:
+            name: feast-feature-repo-tenant-b

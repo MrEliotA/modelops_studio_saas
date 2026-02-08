@@ -1,0 +1,89 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: control-plane-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: control-plane-api
+  template:
+    metadata:
+      labels:
+        app: control-plane-api
+    spec:
+      containers:
+      - name: main
+        image: mlops/control-plane-api:dev
+        imagePullPolicy: IfNotPresent
+        ports:
+          - containerPort: 8000
+        envFrom:
+          - configMapRef:
+              name: mlops-env
+          - secretRef:
+              name: mlops-secrets
+        env:
+          - name: AUTH_MODE
+            value: "passthrough"
+          # Tenant routing: external users can select tenant via subdomain or path prefix.
+          # Example (subdomain): https://tenant-a.<base-domain>/api/v1/...
+          # Example (path):      https://<base-domain>/t/tenant-a/api/v1/...
+          - name: TENANT_ROUTING_MODE
+            value: "auto"
+          - name: TENANT_PATH_PREFIX
+            value: "/t"
+          - name: TENANT_MAP_FILE
+            value: "/etc/mlops/tenant-map/tenant-map.json"
+          - name: TEMPLATE_SERVICE_URL
+            value: "http://template-service:8000"
+          - name: RUN_SERVICE_URL
+            value: "http://run-service:8000"
+          - name: TRAINING_SERVICE_URL
+            value: "http://training-service:8000"
+          - name: REGISTRY_SERVICE_URL
+            value: "http://registry-service:8000"
+          - name: DEPLOYMENT_SERVICE_URL
+            value: "http://deployment-service:8000"
+          - name: ARTIFACT_SERVICE_URL
+            value: "http://artifact-service:8000"
+          - name: METERING_SERVICE_URL
+            value: "http://metering-service:8000"
+          - name: LLM_RAG_SERVICE_URL
+            value: "http://llm-rag-service:8000"
+          - name: LLM_EMBEDDINGS_SERVICE_URL
+            value: "http://llm-embeddings-service:8000"
+          - name: LLM_EVAL_SERVICE_URL
+            value: "http://llm-eval-service:8000"
+          - name: LLM_LABELING_SERVICE_URL
+            value: "http://llm-labeling-service:8000"
+        readinessProbe:
+          httpGet:
+            path: /api/v1/healthz
+            port: 8000
+          initialDelaySeconds: 3
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /api/v1/healthz
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 20
+
+        volumeMounts:
+          - name: tenant-map
+            mountPath: /etc/mlops/tenant-map
+            readOnly: true
+
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+
+      volumes:
+        - name: tenant-map
+          configMap:
+            name: mlops-tenant-map

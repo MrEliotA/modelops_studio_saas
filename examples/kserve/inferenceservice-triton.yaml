@@ -1,0 +1,33 @@
+apiVersion: serving.kserve.io/v1beta1
+kind: InferenceService
+metadata:
+  name: triton-addsub
+  namespace: mlops-serving
+  annotations:
+    # RawDeployment + KEDA is useful on bare-metal clusters without Knative.
+    serving.kserve.io/deploymentMode: RawDeployment
+    serving.kserve.io/autoscalerClass: keda
+    serving.kserve.io/enable-prometheus-scraping: "true"
+spec:
+  predictor:
+    minReplicas: 1
+    maxReplicas: 4
+    # KServe request batcher (optional). Triton dynamic batching is configured in config.pbtxt.
+    batcher:
+      maxBatchSize: 32
+      maxLatency: 500
+    model:
+      modelFormat:
+        name: triton
+      protocolVersion: v2
+      runtimeVersion: 24.08-py3
+      storageUri: s3://mlops-artifacts/triton/add_sub
+      resources:
+        requests:
+          cpu: "500m"
+          memory: "2Gi"
+          nvidia.com/gpu: 1
+        limits:
+          cpu: "2"
+          memory: "4Gi"
+          nvidia.com/gpu: 1

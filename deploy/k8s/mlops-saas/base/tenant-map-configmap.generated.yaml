@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mlops-tenant-map
+  labels:
+    app.kubernetes.io/name: mlops-saas
+    app.kubernetes.io/component: tenant-routing
+  annotations:
+    mlops-saas.io/tenant-map-sha256: 19eaf7185fd21d37f21acc12edfdad73c2775cd67ddd28b23e2a8dc5deb62e6d
+data:
+  tenant-map.json: |
+    {
+      "tenant-a": {
+        "project_id": "76cfc3fa-901c-4edb-9096-9baa045d79ce",
+        "tenant_id": "36de0af7-5038-4895-b048-8a83416b55b3"
+      },
+      "tenant-b": {
+        "project_id": "11e44d39-b558-4aef-866a-1552801e7be4",
+        "tenant_id": "f3999c96-8a26-48b7-b5b9-79d8b67b4c2e"
+      }
+    }

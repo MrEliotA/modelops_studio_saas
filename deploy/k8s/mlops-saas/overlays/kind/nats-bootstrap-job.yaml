@@ -1,0 +1,14 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: nats-bootstrap
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+      - name: bootstrap
+        image: mlops/nats-bootstrap:dev
+        env:
+          - name: NATS_URL
+            value: nats://nats:4222

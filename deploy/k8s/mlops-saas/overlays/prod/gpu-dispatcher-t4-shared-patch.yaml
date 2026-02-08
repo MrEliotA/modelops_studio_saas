@@ -1,0 +1,14 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gpu-dispatcher-t4-shared
+  namespace: mlops-system
+spec:
+  template:
+    spec:
+      containers:
+        - name: dispatcher
+          image: ghcr.io/yourorg/gpu-runner:v1.07
+          env:
+            - name: GPU_EXECUTOR_IMAGE
+              value: ghcr.io/yourorg/gpu-runner:v1.07

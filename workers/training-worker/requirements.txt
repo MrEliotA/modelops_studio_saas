@@ -1,0 +1,5 @@
+-e ../../libs/common
+asyncpg>=0.29
+structlog>=25.0
+nats-py>=2.9.0
+mlflow>=2.9.0

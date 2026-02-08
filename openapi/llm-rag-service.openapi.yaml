@@ -1,0 +1,28 @@
+openapi: 3.0.3
+info:
+  title: llm-rag-service
+  version: 0.2.0
+paths:
+  /api/v1/rag/indexes:
+    post: { summary: Create RAG index }
+    get: { summary: List RAG indexes }
+  /api/v1/rag/indexes/{index_id}/documents:
+    post:
+      summary: Ingest documents (chunk+embed+store)
+      parameters:
+        - in: path
+          name: index_id
+          required: true
+          schema: { type: string }
+  /api/v1/rag/indexes/{index_id}/query:
+    post:
+      summary: Query RAG index with vector search
+      parameters:
+        - in: path
+          name: index_id
+          required: true
+          schema: { type: string }
+
+  /api/v1/rag/query:
+    post:
+      summary: Query RAG index (BFF-friendly; index_id in body)

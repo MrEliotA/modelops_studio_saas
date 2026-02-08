@@ -1,0 +1,30 @@
+apiVersion: serving.kserve.io/v1beta1
+kind: InferenceService
+metadata:
+  name: demo-llm-keda
+  namespace: mlops-serving
+  annotations:
+    serving.kserve.io/deploymentMode: "RawDeployment"
+    serving.kserve.io/autoscalerClass: "keda"
+spec:
+  predictor:
+    minReplicas: 0
+    maxReplicas: 10
+    # Example: scale based on a Prometheus metric (adjust query/threshold to your stack).
+    autoScaling:
+      metrics:
+        - type: External
+          external:
+            metric:
+              name: prometheus-metric
+              selector:
+                matchLabels:
+                  app: demo-llm-keda
+            target:
+              type: Value
+              value: "2"
+    # Replace runtime/storageUri with your actual runtime/model.
+    model:
+      modelFormat:
+        name: huggingface
+      storageUri: "s3://mlops-models/tenant-a/demo-llm/1/model"

@@ -1,0 +1,51 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: mlops-system
+resources:
+  - rbac/gpu-job-launcher-rbac.yaml
+  - workers/stream-feast-writer.yaml
+  - services/stream-ingest-service.yaml
+  - services/feature-store-service.yaml
+  - namespace.yaml
+  - env-configmap.yaml
+  - tenant-map-configmap.generated.yaml
+  # Secrets are environment-specific. Create `mlops-secrets` via your secret manager.
+  # For local demos: overlays/kind/env-secret.yaml.
+  - compute-profiles-configmap.yaml
+  - services/template-service-deploy.yaml
+  - services/template-service-svc.yaml
+  - services/run-service-deploy.yaml
+  - services/run-service-svc.yaml
+  - services/registry-service-deploy.yaml
+  - services/registry-service-svc.yaml
+  - services/artifact-service-deploy.yaml
+  - services/artifact-service-svc.yaml
+  - services/metering-service-deploy.yaml
+  - services/metering-service-svc.yaml
+  - services/llm-embeddings-service-deploy.yaml
+  - services/llm-embeddings-service-svc.yaml
+  - services/llm-rag-service-deploy.yaml
+  - services/llm-rag-service-svc.yaml
+  - services/control-plane-api-deploy.yaml
+  - services/control-plane-api-svc.yaml
+  - services/training-service-deploy.yaml
+  - services/training-service-svc.yaml
+  - services/gpu-jobs-service-deploy.yaml
+  - services/gpu-jobs-service-svc.yaml
+  - services/deployment-service-deploy.yaml
+  - services/deployment-service-svc.yaml
+  - services/serving-service-deploy.yaml
+  - services/serving-service-svc.yaml
+  - services/llm-eval-service-deploy.yaml
+  - services/llm-eval-service-svc.yaml
+  - services/llm-labeling-service-deploy.yaml
+  - services/llm-labeling-service-svc.yaml
+  - workers/run-orchestrator-deploy.yaml
+  - workers/training-worker-deploy.yaml
+  - workers/gpu-dispatcher-t4-shared.yaml
+  - workers/gpu-dispatcher-t4-exclusive.yaml
+  - workers/gpu-dispatcher-mig.yaml
+  - workers/deploy-worker-deploy.yaml
+  - workers/metering-worker-deploy.yaml
+  - services/gpu-scheduler-service.yaml
+  - services/gpu-scheduler-service-deploy.yaml

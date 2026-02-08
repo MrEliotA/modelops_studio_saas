@@ -1,0 +1,21 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: route-default
+  namespace: gateway-system
+  labels:
+    app.kubernetes.io/name: mlops-gateway
+spec:
+  parentRefs:
+    - name: mlops-gateway
+  hostnames:
+    - "*.mlops.local"
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: "/"
+      backendRefs:
+        - name: control-plane-api
+          namespace: mlops-system
+          port: 8000

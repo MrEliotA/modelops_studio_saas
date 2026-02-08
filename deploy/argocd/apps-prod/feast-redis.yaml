@@ -1,0 +1,26 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: feast-redis
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://charts.bitnami.com/bitnami
+    chart: redis
+    targetRevision: 19.6.2
+    helm:
+      releaseName: feast-redis
+      values: |
+        architecture: standalone
+        auth:
+          enabled: false
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: feast
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

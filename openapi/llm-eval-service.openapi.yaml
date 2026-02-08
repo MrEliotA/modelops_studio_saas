@@ -1,0 +1,90 @@
+openapi: 3.0.3
+info:
+  title: llm-eval-service
+  version: 0.2.0
+paths:
+  /api/v1/eval:
+    post:
+      summary: Create an evaluation run and persist metrics
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EvalRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EvalRun'
+  /api/v1/eval/runs:
+    get:
+      summary: List evaluation runs
+      parameters:
+        - in: query
+          name: limit
+          schema: { type: integer, default: 50, minimum: 1, maximum: 200 }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/EvalRunSummary' }
+  /api/v1/eval/runs/{run_id}:
+    get:
+      summary: Get an evaluation run
+      parameters:
+        - in: path
+          name: run_id
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EvalRun' }
+components:
+  schemas:
+    EvalRequest:
+      type: object
+      required: [task, predictions, labels]
+      properties:
+        task:
+          type: string
+          description: classification | regression | exact_match | retrieval
+        predictions:
+          type: array
+          items: {}
+        labels:
+          type: array
+          items: {}
+        options:
+          type: object
+          additionalProperties: true
+        model_version_id:
+          type: string
+          format: uuid
+    EvalRunSummary:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        task: { type: string }
+        model_version_id: { type: string, format: uuid, nullable: true }
+        input_count: { type: integer }
+        metrics: { type: object, additionalProperties: true }
+        created_by: { type: string, nullable: true }
+        created_at: { type: string, format: date-time }
+    EvalRun:
+      allOf:
+        - $ref: '#/components/schemas/EvalRunSummary'
+        - type: object
+          properties:
+            details: { type: object, additionalProperties: true }

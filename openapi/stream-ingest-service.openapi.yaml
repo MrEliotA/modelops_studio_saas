@@ -1,0 +1,13 @@
+openapi: 3.0.3
+info:
+  title: stream-ingest-service
+  version: 0.1.0
+paths:
+  /api/v1/streams/{stream_name}/events:
+    post:
+      summary: Publish a stream event to JetStream
+      parameters:
+        - in: path
+          name: stream_name
+          required: true
+          schema: { type: string }

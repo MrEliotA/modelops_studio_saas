@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: feature-store-service
+  namespace: mlops-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: feature-store-service }
+  template:
+    metadata:
+      labels: { app: feature-store-service }
+    spec:
+      containers:
+        - name: feature-store-service
+          image: mlops/feature-store-service:dev
+          ports: [{ containerPort: 8000 }]
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: mlops-postgres
+                  key: database_url
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: feature-store-service
+  namespace: mlops-system
+spec:
+  selector: { app: feature-store-service }
+  ports:
+    - name: http
+      port: 8000
+      targetPort: 8000

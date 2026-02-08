@@ -1,0 +1,115 @@
+# KFP v2 IR YAML (YAML-only template)
+pipelineInfo:
+  name: rollout-ab
+root:
+  dag:
+    tasks:
+      rollout:
+        cachingOptions:
+          enableCache: false
+        componentRef:
+          name: comp-rollout-ab
+        inputs:
+          parameters:
+            deployment_base_url:
+              componentInputParameter: deployment_base_url
+            tenant_id:
+              componentInputParameter: tenant_id
+            project_id:
+              componentInputParameter: project_id
+            user_id:
+              componentInputParameter: user_id
+            deployment_id:
+              componentInputParameter: deployment_id
+            model_version_id:
+              componentInputParameter: model_version_id
+        taskInfo:
+          name: rollout
+inputDefinitions:
+  parameters:
+    deployment_base_url:
+      parameterType: STRING
+    tenant_id:
+      parameterType: STRING
+    project_id:
+      parameterType: STRING
+    user_id:
+      parameterType: STRING
+    deployment_id:
+      parameterType: STRING
+    model_version_id:
+      parameterType: STRING
+components:
+  comp-rollout-ab:
+    executorLabel: exec-rollout-ab
+    inputDefinitions:
+      parameters:
+        deployment_base_url:
+          parameterType: STRING
+        tenant_id:
+          parameterType: STRING
+        project_id:
+          parameterType: STRING
+        user_id:
+          parameterType: STRING
+        deployment_id:
+          parameterType: STRING
+        model_version_id:
+          parameterType: STRING
+deploymentSpec:
+  executors:
+    exec-rollout-ab:
+      container:
+        image: docker.io/library/python:3.11-slim
+        command:
+          - sh
+          - -ec
+        args:
+          - |
+            python - <<'PY'
+            import json
+            import urllib.request
+            import urllib.error
+
+            base = "{{$.inputs.parameters['deployment_base_url']}}".rstrip('/')
+            tenant_id = "{{$.inputs.parameters['tenant_id']}}"
+            project_id = "{{$.inputs.parameters['project_id']}}"
+            user_id = "{{$.inputs.parameters['user_id']}}"
+            deployment_id = "{{$.inputs.parameters['deployment_id']}}".strip()
+            model_version_id = "{{$.inputs.parameters['model_version_id']}}".strip()
+
+            if not deployment_id:
+              raise SystemExit('deployment_id is required')
+            if not model_version_id:
+              raise SystemExit('model_version_id is required for A/B rollout')
+
+            headers = {
+              'Content-Type': 'application/json',
+              'X-Tenant-Id': tenant_id,
+              'X-Project-Id': project_id,
+              'X-User-Id': user_id,
+            }
+
+            payload = {
+              'traffic': {'canaryTrafficPercent': 50},
+              'model_version_id': model_version_id,
+            }
+
+            data = json.dumps(payload).encode('utf-8')
+            req = urllib.request.Request(
+              url=f"{base}/api/v1/deployments/{deployment_id}",
+              data=data,
+              headers=headers,
+              method='PUT'
+            )
+
+            try:
+              with urllib.request.urlopen(req, timeout=20) as resp:
+                out = resp.read().decode('utf-8')
+                print(out)
+            except urllib.error.HTTPError as e:
+              out = e.read().decode('utf-8')
+              raise SystemExit(f"rollout_failed status={e.code} body={out}")
+            PY
+schemaVersion: 2.1.0
+sdkVersion: kfp-2.15.0

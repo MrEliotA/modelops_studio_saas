@@ -1,0 +1,12 @@
+apiVersion: serving.kserve.io/v1beta1
+kind: InferenceService
+metadata:
+  name: demo-model
+  namespace: mlops-serving
+spec:
+  predictor:
+    model:
+      modelFormat:
+        name: sklearn
+      storageUri: "s3://mlops-models/tenant-a/demo-model/2/model"
+    canaryTrafficPercent: 10

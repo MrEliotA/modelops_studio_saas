@@ -1,0 +1,25 @@
+apiVersion: serving.kserve.io/v1beta1
+kind: InferenceService
+metadata:
+  name: demo-model-keda
+  namespace: mlops-serving
+  annotations:
+    # KEDA autoscaling is supported in RawDeployment mode.
+    serving.kserve.io/deploymentMode: "RawDeployment"
+    serving.kserve.io/autoscalerClass: "keda"
+spec:
+  predictor:
+    minReplicas: 0
+    maxReplicas: 5
+    autoScaling:
+      metrics:
+        - type: Resource
+          resource:
+            name: cpu
+            target:
+              type: Utilization
+              averageUtilization: 60
+    model:
+      modelFormat:
+        name: sklearn
+      storageUri: "s3://mlops-models/tenant-a/demo-model/2/model"

@@ -1,0 +1,149 @@
+openapi: 3.0.3
+info:
+  title: llm-labeling-service
+  version: 0.2.0
+paths:
+  /api/v1/labeling:
+    post:
+      summary: Apply labeling rules to items
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LabelingRequest' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LabelingResponse' }
+  /api/v1/labeling/rules:
+    get:
+      summary: List rules
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/Rule' }
+    post:
+      summary: Create a rule
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RuleCreate' }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Rule' }
+  /api/v1/labeling/rules/{rule_id}:
+    patch:
+      summary: Update a rule
+      parameters:
+        - in: path
+          name: rule_id
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RulePatch' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Rule' }
+    delete:
+      summary: Delete a rule
+      parameters:
+        - in: path
+          name: rule_id
+          required: true
+          schema: { type: string }
+      responses:
+        '204':
+          description: No Content
+components:
+  schemas:
+    RuleCreate:
+      type: object
+      required: [name, label, keywords]
+      properties:
+        name: { type: string }
+        label: { type: string }
+        keywords:
+          type: array
+          items: { type: string }
+        is_active: { type: boolean, default: true }
+    RulePatch:
+      type: object
+      properties:
+        label: { type: string }
+        keywords:
+          type: array
+          items: { type: string }
+        is_active: { type: boolean }
+    Rule:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        label: { type: string }
+        keywords:
+          type: array
+          items: { type: string }
+        is_active: { type: boolean }
+        created_by: { type: string, nullable: true }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    LabelingRequest:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          description: List of strings or objects with {id?, text}
+          items: {}
+        rules:
+          type: array
+          description: Inline rules; if omitted, service loads active rules from DB
+          items: { $ref: '#/components/schemas/RuleCreate' }
+        top_n:
+          type: integer
+          default: 3
+          minimum: 1
+          maximum: 10
+    LabelingResponse:
+      type: object
+      properties:
+        top_n: { type: integer }
+        rule_count: { type: integer }
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              id: {}
+              text: { type: string }
+              best_label: { type: string, nullable: true }
+              labels:
+                type: array
+                items: { type: string }
+              matches:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    label: { type: string }
+                    rule: { type: string }
+                    score: { type: integer }

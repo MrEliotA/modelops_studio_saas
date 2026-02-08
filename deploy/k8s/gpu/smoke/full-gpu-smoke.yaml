@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: cuda-vectoradd-smoke
+  namespace: default
+spec:
+  restartPolicy: Never
+  # Use this if your cluster requires an explicit NVIDIA runtime class.
+  # runtimeClassName: nvidia
+  containers:
+    - name: cuda-vectoradd
+      image: nvidia/samples:vectoradd-cuda11.2.1
+      resources:
+        limits:
+          nvidia.com/gpu: "1"
