@@ -14,7 +14,7 @@ This repo is a clean starting point for:
 
 ## High-level architecture
 
-```mermaid
+
 graph TD
   UI[UI] -->|HTTPS| EDGE[API Gateway]
   EDGE --> BFF[Control Plane API]
