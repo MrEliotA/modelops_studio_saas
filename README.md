@@ -3,12 +3,12 @@
 A minimal, GitOps-friendly **multi-tenant MLOps control-plane** that runs on a shared Kubernetes cluster.
 
 This repo is a clean starting point for:
-- Multi-tenant MLOps APIs (projects, templates, runs, models, deployments)
-- Async workers (NATS JetStream) for orchestration
-- Kubeflow Pipelines (KFP) as the orchestration backend
-- KServe for model serving (including Triton runtime)
+- Multi-tenant MLOps APIs
+- Async workers with NATS JetStream
+- Kubeflow Pipelines backend
+- KServe model serving
 
-> This is an MVP. Latency, cost-optimization, and enterprise-grade controls can be layered in later.
+> MVP version.
 
 ---
 
@@ -16,32 +16,32 @@ This repo is a clean starting point for:
 
 ```mermaid
 graph TD
-  UI[Internal Panel UI] -->|HTTPS| EDGE[API Gateway]
-  EDGE -->|tenant routing| BFF[control-plane-api BFF]
+  UI[UI] -->|HTTPS| EDGE[API Gateway]
+  EDGE --> BFF[Control Plane API]
 
   BFF --> DB[(Postgres)]
-  BFF --> NATS[(NATS JetStream)]
+  BFF --> NATS[(NATS)]
 
   subgraph Workers
-    RO[run-orchestrator]
-    TW[training-worker]
-    DW[deployment-worker]
+    RO[Run Orchestrator]
+    TW[Training Worker]
+    DW[Deployment Worker]
   end
 
   NATS --> RO
   NATS --> TW
   NATS --> DW
 
-  RO -->|PIPELINE_BACKEND=kfp| KFP[Kubeflow Pipelines API]
-
+  RO --> KFP[Kubeflow Pipelines]
   DW --> KS[KServe]
-  KS --> IS[InferenceService]
+  KS --> IS[Inference Service]
   IS --> GPU[GPU Nodes]
 
-  BFF --> REG[registry-service]
-  REG --> OBJ[(S3 Artifact Store)]
+  BFF --> REG[Registry]
+  REG --> OBJ[(Object Store)]
 
-  BFF --> TPL[template-service]
+  BFF --> TPL[Template Service]
+
 
 
 ### Edge / Auth options
